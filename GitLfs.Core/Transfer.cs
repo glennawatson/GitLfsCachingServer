@@ -1,8 +1,12 @@
-﻿using System;
-
-namespace GitLfs.Core
+﻿namespace GitLfs.Core
 {
-    public class Class1
+    using System.Collections;
+    using System.Collections.Generic;
+
+    public class Transfer
     {
+        public TransferMode Mode { get; set; }
+
+        public IList<BatchObject> Objects { get; set; }
     }
 }
