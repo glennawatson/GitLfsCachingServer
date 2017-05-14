@@ -49,7 +49,6 @@
                     action.ExpiresAt = (DateTime?)actionToken.Value["expires_at"];
                     action.ExpiresIn = (int?)actionToken.Value["expires_in"];
                     var headerToken = actionToken.Value["header"] as JObject;
-                    action.Header = new List<KeyValuePair<string, string>>();
 
                     if (headerToken != null)
                     {
@@ -60,8 +59,9 @@
                             string key = headerPair.Name;
                             var value = (string)headerPair.Value;
                             headers.Add(new KeyValuePair<string, string>(key, value));
-
                         }
+
+                        action.Headers = headers;
                     }
                 }
 
@@ -94,7 +94,7 @@
 
                 objectItemsToken.Add(objectToken);
 
-                var actionsArray = new JArray();
+                var actionsArray = new JObject();
 
                 objectToken["actions"] = actionsArray;
 
@@ -103,6 +103,18 @@
                     var actionContents = new JObject();
                     actionContents.Add(new JProperty("href", action.HRef));
 
+                    if (action.Headers != null)
+                    {
+                        var headers = new JObject();
+                        foreach (var header in action.Headers)
+                        {
+                            JProperty property = new JProperty(header.Key, header.Value);
+                            headers.Add(property);
+                        }
+
+                        actionContents["header"] = headers;
+                    }
+
                     if (action.ExpiresIn != null)
                     {
                         actionContents.Add(new JProperty("expires_in", action.ExpiresIn));
@@ -110,17 +122,12 @@
 
                     if (action.ExpiresAt != null)
                     {
-                        actionContents.Add(new JProperty("expires_at", action.ExpiresAt.Value.ToUniversalTime().ToString("o")));
+                        actionContents.Add(new JProperty("expires_at", action.ExpiresAt.Value.ToUniversalTime()));
                     }
 
-                    if (action.Header != null)
-                    {
-                        //actionToken["header"] = new JObject(action.Header.Value.Key, action.Header.Value.Value);
-                    }
+                    var actionToken = new JProperty(action.Mode.ToString().ToLowerInvariant(), actionContents);
 
-                    var actionToken = new JProperty(action.Mode.ToString().ToLowerInvariant(),actionContents);
-
-                    actionsArray.Add(new JObject(actionToken));
+                    actionsArray.Add(actionToken);
                 }
             }
 

@@ -5,7 +5,7 @@
 
     public class BatchObjectAction
     {
-        public IList<KeyValuePair<string, string>> Header { get; set; }
+        public IList<KeyValuePair<string, string>> Headers { get; set; }
 
         public string HRef { get; set; }
 
