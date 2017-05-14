@@ -33,7 +33,9 @@
                         Actions = new List<BatchObjectAction>()
                     };
 
-                foreach (JProperty actionToken in item["actions"].Cast<JProperty>())
+                var actionsToken = item["actions"];
+
+                foreach (JProperty actionToken in actionsToken.Cast<JProperty>())
                 {
                     var action = new BatchObjectAction();
                     if (Enum.TryParse(actionToken.Name, true, out BatchActionMode actionMode) == false)
@@ -51,11 +53,13 @@
 
                     if (headerToken != null)
                     {
+                        IList<KeyValuePair<string, string>> headers = new List<KeyValuePair<string, string>>();
+
                         foreach (var headerPair in headerToken.Cast<JProperty>())
                         {
                             string key = headerPair.Name;
                             var value = (string)headerPair.Value;
-                            action.Header = new KeyValuePair<string, string>("", "");
+                            headers.Add(new KeyValuePair<string, string>(key, value));
 
                         }
                     }
@@ -96,25 +100,27 @@
 
                 foreach (BatchObjectAction action in objectValue.Actions)
                 {
-                    var actionToken = new JObject { ["href"] = action.HRef };
+                    var actionContents = new JObject();
+                    actionContents.Add(new JProperty("href", action.HRef));
+
                     if (action.ExpiresIn != null)
                     {
-                        actionToken["expires_in"] = action.ExpiresIn;
+                        actionContents.Add(new JProperty("expires_in", action.ExpiresIn));
                     }
 
                     if (action.ExpiresAt != null)
                     {
-                        actionToken["expires_at"] = action.ExpiresAt.Value.ToUniversalTime().ToString("o");
+                        actionContents.Add(new JProperty("expires_at", action.ExpiresAt.Value.ToUniversalTime().ToString("o")));
                     }
 
                     if (action.Header != null)
                     {
-                        actionToken["header"] = new JObject(action.Header.Value.Key, action.Header.Value.Value);
+                        //actionToken["header"] = new JObject(action.Header.Value.Key, action.Header.Value.Value);
                     }
 
-                    var actionOutter = new JObject(action.Mode.ToString().ToLowerInvariant(), actionToken);
+                    var actionToken = new JProperty(action.Mode.ToString().ToLowerInvariant(),actionContents);
 
-                    actionsArray.Add(actionOutter);
+                    actionsArray.Add(new JObject(actionToken));
                 }
             }
 
