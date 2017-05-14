@@ -1,4 +1,4 @@
-﻿namespace GitLfs.Core
+﻿namespace GitLfs.Core.BatchResponse
 {
     using System;
 

@@ -1,6 +1,5 @@
-﻿namespace GitLfs.Core
+﻿namespace GitLfs.Core.BatchResponse
 {
-    using System.Collections;
     using System.Collections.Generic;
 
     using Newtonsoft.Json;

@@ -1,4 +1,13 @@
-﻿namespace GitLfs.Core
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="JsonTransferSerialiser.cs" company="Glenn Watson">
+//   Copyright (C) Glenn Watson
+// </copyright>
+// <summary>
+//   A JSON based serializer that will serialise to and from JSON strings.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
+namespace GitLfs.Core.BatchResponse
 {
     using System;
     using System.Collections.Generic;
@@ -7,9 +16,13 @@
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    public class TransferSerialiser
+    /// <summary>
+    /// A JSON based serializer that will serialise to and from JSON strings.
+    /// </summary>
+    public class JsonTransferSerialiser : ITransferSerialiser
     {
-        public static Transfer SerialiseFromJson(string json)
+        /// <inheritdoc />
+        public Transfer FromString(string json)
         {
             var transfer = new Transfer { Objects = new List<BatchObject>() };
 
@@ -71,7 +84,8 @@
             return transfer;
         }
 
-        public static string SerialiseToJson(Transfer transfer)
+        /// <inheritdoc />
+        public string ToString(Transfer transfer)
         {
             var jsonTransfer = new JObject { ["transfer"] = transfer.Mode.ToString().ToLowerInvariant() };
 
@@ -100,8 +114,7 @@
 
                 foreach (BatchObjectAction action in objectValue.Actions)
                 {
-                    var actionContents = new JObject();
-                    actionContents.Add(new JProperty("href", action.HRef));
+                    var actionContents = new JObject { new JProperty("href", action.HRef) };
 
                     if (action.Headers != null)
                     {
