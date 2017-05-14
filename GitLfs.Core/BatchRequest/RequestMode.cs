@@ -1,4 +1,10 @@
-﻿namespace GitLfs.Core.BatchRequest
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="RequestMode.cs" company="Glenn Watson">
+//     Copyright (C) 2017. Glenn Watson
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
+
+namespace GitLfs.Core.BatchRequest
 {
     using System.Runtime.Serialization;
 

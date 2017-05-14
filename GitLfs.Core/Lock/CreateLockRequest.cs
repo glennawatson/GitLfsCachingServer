@@ -1,10 +1,7 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="CreateLockRequest.cs" company="Glenn Watson">
-//   Copyright (C) 2017. Glenn Watson
+//     Copyright (C) 2017. Glenn Watson
 // </copyright>
-// <summary>
-//   A request to lock a particular file.
-// </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Core.Lock

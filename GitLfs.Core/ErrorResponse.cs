@@ -1,10 +1,7 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="ErrorResponse.cs" company="Glenn Watson">
-//   Copyright (C) 2017. Glenn Watson
+//     Copyright (C) 2017. Glenn Watson
 // </copyright>
-// <summary>
-//   Defines the ErrorResponse type.
-// </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Core

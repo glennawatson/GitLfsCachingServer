@@ -1,10 +1,7 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="ILfsClient.cs" company="Glenn Watson">
-//   Copyright (C) 2017. Glenn Watson
+//     Copyright (C) 2017. Glenn Watson
 // </copyright>
-// <summary>
-//   Represents a GIT LFS client.
-// </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Client

@@ -1,4 +1,10 @@
-﻿namespace GitLfs.Core.BatchRequest
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="RequestObject.cs" company="Glenn Watson">
+//     Copyright (C) 2017. Glenn Watson
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
+
+namespace GitLfs.Core.BatchRequest
 {
     using Newtonsoft.Json;
 

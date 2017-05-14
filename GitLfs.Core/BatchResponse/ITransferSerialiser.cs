@@ -1,10 +1,7 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="ITransferSerialiser.cs" company="Glenn Watson">
-//   Copyright (C) 2017. Glenn Watson
+//     Copyright (C) 2017. Glenn Watson
 // </copyright>
-// <summary>
-//   Allows serialisation of Transfer objects to and from string values.
-// </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Core.BatchResponse

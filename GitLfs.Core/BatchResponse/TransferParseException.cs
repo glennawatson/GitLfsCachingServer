@@ -1,4 +1,10 @@
-﻿namespace GitLfs.Core.BatchResponse
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="TransferParseException.cs" company="Glenn Watson">
+//     Copyright (C) 2017. Glenn Watson
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
+
+namespace GitLfs.Core.BatchResponse
 {
     using System;
 

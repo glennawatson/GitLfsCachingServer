@@ -1,10 +1,7 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="JsonTransferSerialiser.cs" company="Glenn Watson">
-//   Copyright (C) Glenn Watson
+//     Copyright (C) 2017. Glenn Watson
 // </copyright>
-// <summary>
-//   A JSON based serializer that will serialise to and from JSON strings.
-// </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Core.BatchResponse

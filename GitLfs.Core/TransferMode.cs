@@ -1,10 +1,7 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="TransferMode.cs" company="Glenn Watson">
-//   Copyright (C) 2017. Glenn Watson.
+//     Copyright (C) 2017. Glenn Watson
 // </copyright>
-// <summary>
-//   The mode to use when transferring files.
-// </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Core

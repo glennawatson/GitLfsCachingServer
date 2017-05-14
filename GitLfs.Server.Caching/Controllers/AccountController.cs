@@ -1,4 +1,10 @@
-﻿namespace GitLfs.Server.Caching.Controllers
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="AccountController.cs" company="Glenn Watson">
+//     Copyright (C) 2017. Glenn Watson
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
+
+namespace GitLfs.Server.Caching.Controllers
 {
     using System.Collections.Generic;
     using System.Linq;
