@@ -9,6 +9,7 @@
 
 namespace GitLfs.Client
 {
+    using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
 
@@ -17,13 +18,13 @@ namespace GitLfs.Client
         /// <inheritdoc />
         public Task<string> DownloadFile(string objectId)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         /// <inheritdoc />
         public Task<IEnumerable<string>> DownloadFiles(IEnumerable<string> objectIds)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
     }
 }

@@ -3,7 +3,9 @@
     public enum BatchActionMode
     {
         Upload,
+
         Download,
+
         Verify
     }
 }

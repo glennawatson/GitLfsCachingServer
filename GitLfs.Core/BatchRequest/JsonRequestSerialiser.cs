@@ -14,7 +14,7 @@ namespace GitLfs.Core.BatchRequest
     using Newtonsoft.Json.Serialization;
 
     /// <summary>
-    /// Serialises request objects to and from JSON. 
+    ///     Serialises request objects to and from JSON.
     /// </summary>
     public class JsonRequestSerialiser : IRequestSerialiser
     {
@@ -32,7 +32,7 @@ namespace GitLfs.Core.BatchRequest
 
         private JsonSerializerSettings CreateSettings()
         {
-            JsonSerializerSettings settings = new JsonSerializerSettings();
+            var settings = new JsonSerializerSettings();
             settings.Formatting = Formatting.Indented;
             settings.Converters.Add(new StringEnumConverter());
             settings.ContractResolver = new LowercaseContractResolver();
@@ -46,6 +46,5 @@ namespace GitLfs.Core.BatchRequest
                 return propertyName.ToLower();
             }
         }
-
     }
 }

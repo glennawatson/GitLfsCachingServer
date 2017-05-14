@@ -13,54 +13,37 @@
     using Microsoft.Extensions.Logging;
 
     /// <summary>
-    /// The startup object where we register all our details about our web site.
+    ///     The startup object where we register all our details about our web site.
     /// </summary>
     public class Startup
     {
+        /// <summary>
+        ///     Initializes a new instance of the <see cref="Startup" /> class.
+        /// </summary>
+        /// <param name="env">Details about our environment for the web server.</param>
         public Startup(IHostingEnvironment env)
         {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(env.ContentRootPath)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
+            var builder = new ConfigurationBuilder().SetBasePath(env.ContentRootPath)
+                .AddJsonFile("appsettings.json", false, true)
+                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", true);
 
-            if (env.IsDevelopment())
-            {
-                // For more details on using the user secret store see https://go.microsoft.com/fwlink/?LinkID=532709
-                builder.AddUserSecrets<Startup>();
-            }
+            if (env.IsDevelopment()) builder.AddUserSecrets<Startup>();
 
             builder.AddEnvironmentVariables();
             this.Configuration = builder.Build();
         }
 
         /// <summary>
-        /// Gets the configuration.
+        ///     Gets the configuration.
         /// </summary>
         public IConfigurationRoot Configuration { get; }
 
         /// <summary>
-        /// This method gets called by the runtime. Use this method to add services to the container.
+        ///     This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         /// </summary>
-        /// <param name="services">A collection of services, where we register our service information.</param>
-        public void ConfigureServices(IServiceCollection services)
-        {
-            // Add framework services.
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(this.Configuration.GetConnectionString("DefaultConnection")));
-
-            services.AddIdentity<ApplicationUser, IdentityRole>()
-                .AddEntityFrameworkStores<ApplicationDbContext>()
-                .AddDefaultTokenProviders();
-
-            services.AddMvc();
-
-            // Add application services.
-            services.AddTransient<IEmailSender, AuthMessageSender>();
-            services.AddTransient<ISmsSender, AuthMessageSender>();
-        }
-
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        /// <param name="app">Application where we can register different settings.</param>
+        /// <param name="env">The hosting environment details.</param>
+        /// <param name="loggerFactory">A logging factory where we can register logging details.</param>
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory.AddConsole(this.Configuration.GetSection("Logging"));
@@ -82,12 +65,27 @@
             app.UseIdentity();
 
             // Add external authentication middle ware below. To configure them please see https://go.microsoft.com/fwlink/?LinkID=532715
-            app.UseMvc(routes =>
-            {
-                routes.MapRoute(
-                    name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
-            });
+            app.UseMvc(routes => { routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}"); });
+        }
+
+        /// <summary>
+        ///     This method gets called by the runtime. Use this method to add services to the container.
+        /// </summary>
+        /// <param name="services">A collection of services, where we register our service information.</param>
+        public void ConfigureServices(IServiceCollection services)
+        {
+            // Add framework services.
+            services.AddDbContext<ApplicationDbContext>(
+                options => options.UseSqlServer(this.Configuration.GetConnectionString("DefaultConnection")));
+
+            services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>()
+                .AddDefaultTokenProviders();
+
+            services.AddMvc();
+
+            // Add application services.
+            services.AddTransient<IEmailSender, AuthMessageSender>();
+            services.AddTransient<ISmsSender, AuthMessageSender>();
         }
     }
 }

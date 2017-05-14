@@ -1,14 +1,13 @@
 ﻿namespace GitLfs.Core.BatchRequest
 {
-    using System.Collections;
     using System.Collections.Generic;
 
     public class Request
     {
+        public IList<RequestObject> Objects { get; set; }
+
         public RequestMode Operation { get; set; }
 
         public IList<TransferMode> Transfers { get; set; }
-
-        public IList<RequestObject> Objects { get; set; }
     }
 }

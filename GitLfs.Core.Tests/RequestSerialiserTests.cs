@@ -29,7 +29,6 @@
             Assert.Equal(request.Transfers[0], TransferMode.Basic);
         }
 
-
         [Fact]
         public void RequestSerialiseTest()
         {
@@ -40,9 +39,9 @@
 
             var objectValue = serialiser.FromString(jsonText);
 
-            string jsonObjectText = JObject.Parse(jsonText).ToString(Formatting.Indented);
+            var jsonObjectText = JObject.Parse(jsonText).ToString(Formatting.Indented);
 
-            string objectText = serialiser.ToString(objectValue);
+            var objectText = serialiser.ToString(objectValue);
 
             Assert.Equal(objectText, jsonObjectText);
         }

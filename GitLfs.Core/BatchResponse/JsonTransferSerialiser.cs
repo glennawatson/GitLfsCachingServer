@@ -17,7 +17,7 @@ namespace GitLfs.Core.BatchResponse
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// A JSON based serializer that will serialise to and from JSON strings.
+    ///     A JSON based serializer that will serialise to and from JSON strings.
     /// </summary>
     public class JsonTransferSerialiser : ITransferSerialiser
     {
@@ -26,7 +26,7 @@ namespace GitLfs.Core.BatchResponse
         {
             var transfer = new Transfer { Objects = new List<BatchObject>() };
 
-            JObject jsonObject = JObject.Parse(json);
+            var jsonObject = JObject.Parse(json);
 
             if (Enum.TryParse((string)jsonObject["transfer"], true, out TransferMode mode) == false)
             {
@@ -35,20 +35,19 @@ namespace GitLfs.Core.BatchResponse
 
             transfer.Mode = mode;
 
-            foreach (JToken item in jsonObject["objects"])
+            foreach (var item in jsonObject["objects"])
             {
-                var batchObject =
-                    new BatchObject
-                    {
-                        ObjectId = (string)item["oid"],
-                        Authenticated = (bool?)item["authenticated"],
-                        Size = (long)item["size"],
-                        Actions = new List<BatchObjectAction>()
-                    };
+                var batchObject = new BatchObject
+                                      {
+                                          ObjectId = (string)item["oid"],
+                                          Authenticated = (bool?)item["authenticated"],
+                                          Size = (long)item["size"],
+                                          Actions = new List<BatchObjectAction>()
+                                      };
 
                 var actionsToken = item["actions"];
 
-                foreach (JProperty actionToken in actionsToken.Cast<JProperty>())
+                foreach (var actionToken in actionsToken.Cast<JProperty>())
                 {
                     var action = new BatchObjectAction();
                     if (Enum.TryParse(actionToken.Name, true, out BatchActionMode actionMode) == false)
@@ -69,7 +68,7 @@ namespace GitLfs.Core.BatchResponse
 
                         foreach (var headerPair in headerToken.Cast<JProperty>())
                         {
-                            string key = headerPair.Name;
+                            var key = headerPair.Name;
                             var value = (string)headerPair.Value;
                             headers.Add(new KeyValuePair<string, string>(key, value));
                         }
@@ -93,13 +92,9 @@ namespace GitLfs.Core.BatchResponse
 
             jsonTransfer["objects"] = objectItemsToken;
 
-            foreach (BatchObject objectValue in transfer.Objects)
+            foreach (var objectValue in transfer.Objects)
             {
-                var objectToken = new JObject
-                {
-                    ["oid"] = objectValue.ObjectId,
-                    ["size"] = objectValue.Size,
-                };
+                var objectToken = new JObject { ["oid"] = objectValue.ObjectId, ["size"] = objectValue.Size };
 
                 if (objectValue.Authenticated != null)
                 {
@@ -112,7 +107,7 @@ namespace GitLfs.Core.BatchResponse
 
                 objectToken["actions"] = actionsArray;
 
-                foreach (BatchObjectAction action in objectValue.Actions)
+                foreach (var action in objectValue.Actions)
                 {
                     var actionContents = new JObject { new JProperty("href", action.HRef) };
 
@@ -121,7 +116,7 @@ namespace GitLfs.Core.BatchResponse
                         var headers = new JObject();
                         foreach (var header in action.Headers)
                         {
-                            JProperty property = new JProperty(header.Key, header.Value);
+                            var property = new JProperty(header.Key, header.Value);
                             headers.Add(property);
                         }
 
