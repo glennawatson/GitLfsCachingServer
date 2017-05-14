@@ -17,7 +17,7 @@
 
             var serialiser = new JsonRequestSerialiser();
 
-            var request = serialiser.FromString(jsonText);
+            Request request = serialiser.FromString(jsonText);
 
             Assert.Equal(request.Objects.Count, 1);
             Assert.Equal(request.Transfers.Count, 1);
@@ -37,11 +37,11 @@
 
             var serialiser = new JsonRequestSerialiser();
 
-            var objectValue = serialiser.FromString(jsonText);
+            Request objectValue = serialiser.FromString(jsonText);
 
-            var jsonObjectText = JObject.Parse(jsonText).ToString(Formatting.Indented);
+            string jsonObjectText = JObject.Parse(jsonText).ToString(Formatting.Indented);
 
-            var objectText = serialiser.ToString(objectValue);
+            string objectText = serialiser.ToString(objectValue);
 
             Assert.Equal(objectText, jsonObjectText);
         }

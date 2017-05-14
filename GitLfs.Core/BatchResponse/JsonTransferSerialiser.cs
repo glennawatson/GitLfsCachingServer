@@ -17,7 +17,7 @@ namespace GitLfs.Core.BatchResponse
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    ///     A JSON based serializer that will serialise to and from JSON strings.
+    /// A JSON based serializer that will serialise to and from JSON strings.
     /// </summary>
     public class JsonTransferSerialiser : ITransferSerialiser
     {
@@ -26,7 +26,7 @@ namespace GitLfs.Core.BatchResponse
         {
             var transfer = new Transfer { Objects = new List<BatchObject>() };
 
-            var jsonObject = JObject.Parse(json);
+            JObject jsonObject = JObject.Parse(json);
 
             if (Enum.TryParse((string)jsonObject["transfer"], true, out TransferMode mode) == false)
             {
@@ -35,7 +35,7 @@ namespace GitLfs.Core.BatchResponse
 
             transfer.Mode = mode;
 
-            foreach (var item in jsonObject["objects"])
+            foreach (JToken item in jsonObject["objects"])
             {
                 var batchObject = new BatchObject
                                       {
@@ -45,9 +45,9 @@ namespace GitLfs.Core.BatchResponse
                                           Actions = new List<BatchObjectAction>()
                                       };
 
-                var actionsToken = item["actions"];
+                JToken actionsToken = item["actions"];
 
-                foreach (var actionToken in actionsToken.Cast<JProperty>())
+                foreach (JProperty actionToken in actionsToken.Cast<JProperty>())
                 {
                     var action = new BatchObjectAction();
                     if (Enum.TryParse(actionToken.Name, true, out BatchActionMode actionMode) == false)
@@ -66,9 +66,9 @@ namespace GitLfs.Core.BatchResponse
                     {
                         IList<KeyValuePair<string, string>> headers = new List<KeyValuePair<string, string>>();
 
-                        foreach (var headerPair in headerToken.Cast<JProperty>())
+                        foreach (JProperty headerPair in headerToken.Cast<JProperty>())
                         {
-                            var key = headerPair.Name;
+                            string key = headerPair.Name;
                             var value = (string)headerPair.Value;
                             headers.Add(new KeyValuePair<string, string>(key, value));
                         }
@@ -92,7 +92,7 @@ namespace GitLfs.Core.BatchResponse
 
             jsonTransfer["objects"] = objectItemsToken;
 
-            foreach (var objectValue in transfer.Objects)
+            foreach (BatchObject objectValue in transfer.Objects)
             {
                 var objectToken = new JObject { ["oid"] = objectValue.ObjectId, ["size"] = objectValue.Size };
 
@@ -107,14 +107,14 @@ namespace GitLfs.Core.BatchResponse
 
                 objectToken["actions"] = actionsArray;
 
-                foreach (var action in objectValue.Actions)
+                foreach (BatchObjectAction action in objectValue.Actions)
                 {
                     var actionContents = new JObject { new JProperty("href", action.HRef) };
 
                     if (action.Headers != null)
                     {
                         var headers = new JObject();
-                        foreach (var header in action.Headers)
+                        foreach (KeyValuePair<string, string> header in action.Headers)
                         {
                             var property = new JProperty(header.Key, header.Value);
                             headers.Add(property);

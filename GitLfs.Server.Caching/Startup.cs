@@ -13,33 +13,36 @@
     using Microsoft.Extensions.Logging;
 
     /// <summary>
-    ///     The startup object where we register all our details about our web site.
+    /// The startup object where we register all our details about our web site.
     /// </summary>
     public class Startup
     {
         /// <summary>
-        ///     Initializes a new instance of the <see cref="Startup" /> class.
+        /// Initializes a new instance of the <see cref="Startup" /> class.
         /// </summary>
         /// <param name="env">Details about our environment for the web server.</param>
         public Startup(IHostingEnvironment env)
         {
-            var builder = new ConfigurationBuilder().SetBasePath(env.ContentRootPath)
+            IConfigurationBuilder builder = new ConfigurationBuilder().SetBasePath(env.ContentRootPath)
                 .AddJsonFile("appsettings.json", false, true)
                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", true);
 
-            if (env.IsDevelopment()) builder.AddUserSecrets<Startup>();
+            if (env.IsDevelopment())
+            {
+                builder.AddUserSecrets<Startup>();
+            }
 
             builder.AddEnvironmentVariables();
             this.Configuration = builder.Build();
         }
 
         /// <summary>
-        ///     Gets the configuration.
+        /// Gets the configuration.
         /// </summary>
         public IConfigurationRoot Configuration { get; }
 
         /// <summary>
-        ///     This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        /// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         /// </summary>
         /// <param name="app">Application where we can register different settings.</param>
         /// <param name="env">The hosting environment details.</param>
@@ -69,7 +72,7 @@
         }
 
         /// <summary>
-        ///     This method gets called by the runtime. Use this method to add services to the container.
+        /// This method gets called by the runtime. Use this method to add services to the container.
         /// </summary>
         /// <param name="services">A collection of services, where we register our service information.</param>
         public void ConfigureServices(IServiceCollection services)

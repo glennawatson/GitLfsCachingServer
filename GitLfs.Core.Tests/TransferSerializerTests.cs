@@ -15,14 +15,14 @@ namespace GitLfs.Core.Tests
             var testData =
                 "{  \"transfer\": \"basic\",  \"objects\": [    {      \"oid\": \"1111111\",      \"size\": 123,      \"authenticated\": true,      \"actions\": {        \"download\": {          \"href\": \"https://some-download.com\",          \"header\": {            \"Key\": \"value\"          },          \"expires_at\": \"2016-11-10T15:29:07Z\",        }      }    }  ]}";
 
-            var jsonObject = JObject.Parse(testData);
+            JObject jsonObject = JObject.Parse(testData);
 
             var serialiser = new JsonTransferSerialiser();
-            var transfer = serialiser.FromString(testData);
+            Transfer transfer = serialiser.FromString(testData);
 
-            var jsonText = serialiser.ToString(transfer);
+            string jsonText = serialiser.ToString(transfer);
 
-            var formattedText = jsonObject.ToString(Formatting.Indented);
+            string formattedText = jsonObject.ToString(Formatting.Indented);
 
             Assert.Equal(formattedText, jsonText);
         }
@@ -34,7 +34,7 @@ namespace GitLfs.Core.Tests
                 "{  \"transfer\": \"basic\",  \"objects\": [    {      \"oid\": \"1111111\",      \"size\": 123,      \"authenticated\": true,      \"actions\": {        \"download\": {          \"href\": \"https://some-download.com\",          \"header\": {            \"Key\": \"value\"          },          \"expires_at\": \"2016-11-10T15:29:07Z\",        }      }    }  ]}";
 
             var serialiser = new JsonTransferSerialiser();
-            var transfer = serialiser.FromString(testData);
+            Transfer transfer = serialiser.FromString(testData);
 
             Assert.Equal(transfer.Mode, TransferMode.Basic);
 

@@ -14,7 +14,7 @@ namespace GitLfs.Core.BatchRequest
     using Newtonsoft.Json.Serialization;
 
     /// <summary>
-    ///     Serialises request objects to and from JSON.
+    /// Serialises request objects to and from JSON.
     /// </summary>
     public class JsonRequestSerialiser : IRequestSerialiser
     {
