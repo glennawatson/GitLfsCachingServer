@@ -18,16 +18,16 @@ namespace GitLfs.Core.BatchRequest
         /// <inheritdoc />
         public Request FromString(string value)
         {
-            return JsonConvert.DeserializeObject<Request>(value, this.CreateSettings());
+            return JsonConvert.DeserializeObject<Request>(value, CreateSettings());
         }
 
         /// <inheritdoc />
         public string ToString(Request value)
         {
-            return JsonConvert.SerializeObject(value, this.CreateSettings());
+            return JsonConvert.SerializeObject(value, CreateSettings());
         }
 
-        private JsonSerializerSettings CreateSettings()
+        private static JsonSerializerSettings CreateSettings()
         {
             var settings = new JsonSerializerSettings();
             settings.Formatting = Formatting.Indented;
