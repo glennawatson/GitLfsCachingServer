@@ -28,17 +28,15 @@ namespace GitLfs.Server.Caching.Controllers
     [Authorize]
     public class AccountController : Controller
     {
-        private readonly IEmailSender _emailSender;
+        private readonly IEmailSender emailSender;
 
-        private readonly string _externalCookieScheme;
+        private readonly string externalCookieScheme;
 
-        private readonly ILogger _logger;
+        private readonly ILogger logger;
 
-        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly SignInManager<ApplicationUser> signInManager;
 
-        private readonly ISmsSender _smsSender;
-
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ISmsSender smsSender;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
@@ -48,13 +46,15 @@ namespace GitLfs.Server.Caching.Controllers
             ISmsSender smsSender,
             ILoggerFactory loggerFactory)
         {
-            this._userManager = userManager;
-            this._signInManager = signInManager;
-            this._externalCookieScheme = identityCookieOptions.Value.ExternalCookieAuthenticationScheme;
-            this._emailSender = emailSender;
-            this._smsSender = smsSender;
-            this._logger = loggerFactory.CreateLogger<AccountController>();
+            this.UserManager = userManager;
+            this.signInManager = signInManager;
+            this.externalCookieScheme = identityCookieOptions.Value.ExternalCookieAuthenticationScheme;
+            this.emailSender = emailSender;
+            this.smsSender = smsSender;
+            this.logger = loggerFactory.CreateLogger<AccountController>();
         }
+
+        public UserManager<ApplicationUser> UserManager { get; }
 
         // GET /Account/AccessDenied
         [HttpGet]
@@ -73,13 +73,13 @@ namespace GitLfs.Server.Caching.Controllers
                 return this.View("Error");
             }
 
-            ApplicationUser user = await this._userManager.FindByIdAsync(userId);
+            ApplicationUser user = await this.UserManager.FindByIdAsync(userId);
             if (user == null)
             {
                 return this.View("Error");
             }
 
-            IdentityResult result = await this._userManager.ConfirmEmailAsync(user, code);
+            IdentityResult result = await this.UserManager.ConfirmEmailAsync(user, code);
             return this.View(result.Succeeded ? "ConfirmEmail" : "Error");
         }
 
@@ -95,7 +95,7 @@ namespace GitLfs.Server.Caching.Controllers
                 "Account",
                 new { ReturnUrl = returnUrl });
             AuthenticationProperties properties =
-                this._signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+                this.signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
             return this.Challenge(properties, provider);
         }
 
@@ -110,7 +110,7 @@ namespace GitLfs.Server.Caching.Controllers
                 return this.View(nameof(Login));
             }
 
-            ExternalLoginInfo info = await this._signInManager.GetExternalLoginInfoAsync();
+            ExternalLoginInfo info = await this.signInManager.GetExternalLoginInfoAsync();
             if (info == null)
             {
                 return this.RedirectToAction(nameof(Login));
@@ -118,10 +118,10 @@ namespace GitLfs.Server.Caching.Controllers
 
             // Sign in the user with this external login provider if the user already has a login.
             SignInResult result =
-                await this._signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, false);
+                await this.signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, false);
             if (result.Succeeded)
             {
-                this._logger.LogInformation(5, "User logged in with {Name} provider.", info.LoginProvider);
+                this.logger.LogInformation(5, "User logged in with {Name} provider.", info.LoginProvider);
                 return this.RedirectToLocal(returnUrl);
             }
 
@@ -153,21 +153,21 @@ namespace GitLfs.Server.Caching.Controllers
             if (this.ModelState.IsValid)
             {
                 // Get the information about the user from the external login provider
-                ExternalLoginInfo info = await this._signInManager.GetExternalLoginInfoAsync();
+                ExternalLoginInfo info = await this.signInManager.GetExternalLoginInfoAsync();
                 if (info == null)
                 {
                     return this.View("ExternalLoginFailure");
                 }
 
                 var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
-                IdentityResult result = await this._userManager.CreateAsync(user);
+                IdentityResult result = await this.UserManager.CreateAsync(user);
                 if (result.Succeeded)
                 {
-                    result = await this._userManager.AddLoginAsync(user, info);
+                    result = await this.UserManager.AddLoginAsync(user, info);
                     if (result.Succeeded)
                     {
-                        await this._signInManager.SignInAsync(user, false);
-                        this._logger.LogInformation(
+                        await this.signInManager.SignInAsync(user, false);
+                        this.logger.LogInformation(
                             6,
                             "User created an account using {Name} provider.",
                             info.LoginProvider);
@@ -198,8 +198,8 @@ namespace GitLfs.Server.Caching.Controllers
         {
             if (this.ModelState.IsValid)
             {
-                ApplicationUser user = await this._userManager.FindByEmailAsync(model.Email);
-                if (user == null || !await this._userManager.IsEmailConfirmedAsync(user))
+                ApplicationUser user = await this.UserManager.FindByEmailAsync(model.Email);
+                if (user == null || !await this.UserManager.IsEmailConfirmedAsync(user))
                 {
                     return this.View("ForgotPasswordConfirmation");
                 }
@@ -231,7 +231,7 @@ namespace GitLfs.Server.Caching.Controllers
         public async Task<IActionResult> Login(string returnUrl = null)
         {
             // Clear the existing external cookie to ensure a clean login process
-            await this.HttpContext.Authentication.SignOutAsync(this._externalCookieScheme);
+            await this.HttpContext.Authentication.SignOutAsync(this.externalCookieScheme);
 
             this.ViewData["ReturnUrl"] = returnUrl;
             return this.View();
@@ -249,10 +249,10 @@ namespace GitLfs.Server.Caching.Controllers
                 // This doesn't count login failures towards account lockout
                 // To enable password failures to trigger account lockout, set lockoutOnFailure: true
                 SignInResult result =
-                    await this._signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, false);
+                    await this.signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, false);
                 if (result.Succeeded)
                 {
-                    this._logger.LogInformation(1, "User logged in.");
+                    this.logger.LogInformation(1, "User logged in.");
                     return this.RedirectToLocal(returnUrl);
                 }
 
@@ -263,7 +263,7 @@ namespace GitLfs.Server.Caching.Controllers
 
                 if (result.IsLockedOut)
                 {
-                    this._logger.LogWarning(2, "User account locked out.");
+                    this.logger.LogWarning(2, "User account locked out.");
                     return this.View("Lockout");
                 }
 
@@ -280,8 +280,8 @@ namespace GitLfs.Server.Caching.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            await this._signInManager.SignOutAsync();
-            this._logger.LogInformation(4, "User logged out.");
+            await this.signInManager.SignOutAsync();
+            this.logger.LogInformation(4, "User logged out.");
             return this.RedirectToAction(nameof(HomeController.Index), "Home");
         }
 
@@ -304,7 +304,7 @@ namespace GitLfs.Server.Caching.Controllers
             if (this.ModelState.IsValid)
             {
                 var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
-                IdentityResult result = await this._userManager.CreateAsync(user, model.Password);
+                IdentityResult result = await this.UserManager.CreateAsync(user, model.Password);
                 if (result.Succeeded)
                 {
                     // For more information on how to enable account confirmation and password reset please visit https://go.microsoft.com/fwlink/?LinkID=532713
@@ -313,8 +313,8 @@ namespace GitLfs.Server.Caching.Controllers
                     // var callbackUrl = Url.Action(nameof(ConfirmEmail), "Account", new { userId = user.Id, code = code }, protocol: HttpContext.Request.Scheme);
                     // await _emailSender.SendEmailAsync(model.Email, "Confirm your account",
                     // $"Please confirm your account by clicking this link: <a href='{callbackUrl}'>link</a>");
-                    await this._signInManager.SignInAsync(user, false);
-                    this._logger.LogInformation(3, "User created a new account with password.");
+                    await this.signInManager.SignInAsync(user, false);
+                    this.logger.LogInformation(3, "User created a new account with password.");
                     return this.RedirectToLocal(returnUrl);
                 }
 
@@ -344,13 +344,13 @@ namespace GitLfs.Server.Caching.Controllers
                 return this.View(model);
             }
 
-            ApplicationUser user = await this._userManager.FindByEmailAsync(model.Email);
+            ApplicationUser user = await this.UserManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
                 return this.RedirectToAction(nameof(this.ResetPasswordConfirmation), "Account");
             }
 
-            IdentityResult result = await this._userManager.ResetPasswordAsync(user, model.Code, model.Password);
+            IdentityResult result = await this.UserManager.ResetPasswordAsync(user, model.Code, model.Password);
             if (result.Succeeded)
             {
                 return this.RedirectToAction(nameof(this.ResetPasswordConfirmation), "Account");
@@ -373,13 +373,13 @@ namespace GitLfs.Server.Caching.Controllers
         [AllowAnonymous]
         public async Task<ActionResult> SendCode(string returnUrl = null, bool rememberMe = false)
         {
-            ApplicationUser user = await this._signInManager.GetTwoFactorAuthenticationUserAsync();
+            ApplicationUser user = await this.signInManager.GetTwoFactorAuthenticationUserAsync();
             if (user == null)
             {
                 return this.View("Error");
             }
 
-            IList<string> userFactors = await this._userManager.GetValidTwoFactorProvidersAsync(user);
+            IList<string> userFactors = await this.UserManager.GetValidTwoFactorProvidersAsync(user);
             List<SelectListItem> factorOptions = userFactors
                 .Select(purpose => new SelectListItem { Text = purpose, Value = purpose }).ToList();
             return this.View(
@@ -397,14 +397,14 @@ namespace GitLfs.Server.Caching.Controllers
                 return this.View();
             }
 
-            ApplicationUser user = await this._signInManager.GetTwoFactorAuthenticationUserAsync();
+            ApplicationUser user = await this.signInManager.GetTwoFactorAuthenticationUserAsync();
             if (user == null)
             {
                 return this.View("Error");
             }
 
             // Generate the token and send it
-            string code = await this._userManager.GenerateTwoFactorTokenAsync(user, model.SelectedProvider);
+            string code = await this.UserManager.GenerateTwoFactorTokenAsync(user, model.SelectedProvider);
             if (string.IsNullOrWhiteSpace(code))
             {
                 return this.View("Error");
@@ -413,14 +413,14 @@ namespace GitLfs.Server.Caching.Controllers
             string message = "Your security code is: " + code;
             if (model.SelectedProvider == "Email")
             {
-                await this._emailSender.SendEmailAsync(
-                    await this._userManager.GetEmailAsync(user),
+                await this.emailSender.SendEmailAsync(
+                    await this.UserManager.GetEmailAsync(user),
                     "Security Code",
                     message);
             }
             else if (model.SelectedProvider == "Phone")
             {
-                await this._smsSender.SendSmsAsync(await this._userManager.GetPhoneNumberAsync(user), message);
+                await this.smsSender.SendSmsAsync(await this.UserManager.GetPhoneNumberAsync(user), message);
             }
 
             return this.RedirectToAction(
@@ -434,7 +434,7 @@ namespace GitLfs.Server.Caching.Controllers
         public async Task<IActionResult> VerifyCode(string provider, bool rememberMe, string returnUrl = null)
         {
             // Require that the user has already logged in via username/password or external login
-            ApplicationUser user = await this._signInManager.GetTwoFactorAuthenticationUserAsync();
+            ApplicationUser user = await this.signInManager.GetTwoFactorAuthenticationUserAsync();
             if (user == null)
             {
                 return this.View("Error");
@@ -458,7 +458,7 @@ namespace GitLfs.Server.Caching.Controllers
             // The following code protects for brute force attacks against the two factor codes.
             // If a user enters incorrect codes for a specified amount of time then the user account
             // will be locked out for a specified amount of time.
-            SignInResult result = await this._signInManager.TwoFactorSignInAsync(
+            SignInResult result = await this.signInManager.TwoFactorSignInAsync(
                                       model.Provider,
                                       model.Code,
                                       model.RememberMe,
@@ -470,7 +470,7 @@ namespace GitLfs.Server.Caching.Controllers
 
             if (result.IsLockedOut)
             {
-                this._logger.LogWarning(7, "User account locked out.");
+                this.logger.LogWarning(7, "User account locked out.");
                 return this.View("Lockout");
             }
 

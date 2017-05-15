@@ -24,6 +24,13 @@ namespace GitLfs.Server.Caching.Controllers
             return this.View();
         }
 
+        public IActionResult GitRepositories()
+        {
+            this.ViewData["Message"] = "GIT Repositories";
+
+            return this.View();
+        }
+
         public IActionResult Error()
         {
             return this.View();

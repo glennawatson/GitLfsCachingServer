@@ -8,7 +8,9 @@ namespace GitLfs.Server.Caching.Models
 {
     using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
-    // Add profile data for application users by adding properties to the ApplicationUser class
+    /// <summary>
+    /// Add profile data for application users by adding properties to the ApplicationUser class
+    /// </summary>
     public class ApplicationUser : IdentityUser
     {
     }

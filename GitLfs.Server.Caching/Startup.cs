@@ -6,6 +6,7 @@
 
 namespace GitLfs.Server.Caching
 {
+    using GitLfs.Core.BatchRequest;
     using GitLfs.Server.Caching.Data;
     using GitLfs.Server.Caching.Models;
     using GitLfs.Server.Caching.Services;
@@ -91,6 +92,8 @@ namespace GitLfs.Server.Caching
                 .AddDefaultTokenProviders();
 
             services.AddMvc();
+
+            services.AddSingleton<IRequestSerialiser>(new JsonRequestSerialiser());
 
             // Add application services.
             services.AddTransient<IEmailSender, AuthMessageSender>();

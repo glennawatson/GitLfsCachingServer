@@ -24,17 +24,17 @@ namespace GitLfs.Server.Caching.Controllers
     [Authorize]
     public class ManageController : Controller
     {
-        private readonly IEmailSender _emailSender;
+        private readonly IEmailSender emailSender;
 
-        private readonly string _externalCookieScheme;
+        private readonly string externalCookieScheme;
 
-        private readonly ILogger _logger;
+        private readonly ILogger logger;
 
-        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly SignInManager<ApplicationUser> signInManager;
 
-        private readonly ISmsSender _smsSender;
+        private readonly ISmsSender smsSender;
 
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly UserManager<ApplicationUser> userManager;
 
         public ManageController(
             UserManager<ApplicationUser> userManager,
@@ -44,12 +44,12 @@ namespace GitLfs.Server.Caching.Controllers
             ISmsSender smsSender,
             ILoggerFactory loggerFactory)
         {
-            this._userManager = userManager;
-            this._signInManager = signInManager;
-            this._externalCookieScheme = identityCookieOptions.Value.ExternalCookieAuthenticationScheme;
-            this._emailSender = emailSender;
-            this._smsSender = smsSender;
-            this._logger = loggerFactory.CreateLogger<ManageController>();
+            this.userManager = userManager;
+            this.signInManager = signInManager;
+            this.externalCookieScheme = identityCookieOptions.Value.ExternalCookieAuthenticationScheme;
+            this.emailSender = emailSender;
+            this.smsSender = smsSender;
+            this.logger = loggerFactory.CreateLogger<ManageController>();
         }
 
         public enum ManageMessageId
@@ -94,8 +94,8 @@ namespace GitLfs.Server.Caching.Controllers
                 return this.View("Error");
             }
 
-            string code = await this._userManager.GenerateChangePhoneNumberTokenAsync(user, model.PhoneNumber);
-            await this._smsSender.SendSmsAsync(model.PhoneNumber, "Your security code is: " + code);
+            string code = await this.userManager.GenerateChangePhoneNumberTokenAsync(user, model.PhoneNumber);
+            await this.smsSender.SendSmsAsync(model.PhoneNumber, "Your security code is: " + code);
             return this.RedirectToAction(nameof(VerifyPhoneNumber), new { model.PhoneNumber });
         }
 
@@ -120,11 +120,11 @@ namespace GitLfs.Server.Caching.Controllers
             if (user != null)
             {
                 IdentityResult result =
-                    await this._userManager.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
+                    await this.userManager.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
                 if (result.Succeeded)
                 {
-                    await this._signInManager.SignInAsync(user, false);
-                    this._logger.LogInformation(3, "User changed their password successfully.");
+                    await this.signInManager.SignInAsync(user, false);
+                    this.logger.LogInformation(3, "User changed their password successfully.");
                     return this.RedirectToAction(
                         nameof(this.Index),
                         new { Message = ManageMessageId.ChangePasswordSuccess });
@@ -145,9 +145,9 @@ namespace GitLfs.Server.Caching.Controllers
             ApplicationUser user = await this.GetCurrentUserAsync();
             if (user != null)
             {
-                await this._userManager.SetTwoFactorEnabledAsync(user, false);
-                await this._signInManager.SignInAsync(user, false);
-                this._logger.LogInformation(2, "User disabled two-factor authentication.");
+                await this.userManager.SetTwoFactorEnabledAsync(user, false);
+                await this.signInManager.SignInAsync(user, false);
+                this.logger.LogInformation(2, "User disabled two-factor authentication.");
             }
 
             return this.RedirectToAction(nameof(this.Index), "Manage");
@@ -161,9 +161,9 @@ namespace GitLfs.Server.Caching.Controllers
             ApplicationUser user = await this.GetCurrentUserAsync();
             if (user != null)
             {
-                await this._userManager.SetTwoFactorEnabledAsync(user, true);
-                await this._signInManager.SignInAsync(user, false);
-                this._logger.LogInformation(1, "User enabled two-factor authentication.");
+                await this.userManager.SetTwoFactorEnabledAsync(user, true);
+                await this.signInManager.SignInAsync(user, false);
+                this.logger.LogInformation(1, "User enabled two-factor authentication.");
             }
 
             return this.RedirectToAction(nameof(this.Index), "Manage");
@@ -195,12 +195,12 @@ namespace GitLfs.Server.Caching.Controllers
 
             var model = new IndexViewModel
                             {
-                                HasPassword = await this._userManager.HasPasswordAsync(user),
-                                PhoneNumber = await this._userManager.GetPhoneNumberAsync(user),
-                                TwoFactor = await this._userManager.GetTwoFactorEnabledAsync(user),
-                                Logins = await this._userManager.GetLoginsAsync(user),
+                                HasPassword = await this.userManager.HasPasswordAsync(user),
+                                PhoneNumber = await this.userManager.GetPhoneNumberAsync(user),
+                                TwoFactor = await this.userManager.GetTwoFactorEnabledAsync(user),
+                                Logins = await this.userManager.GetLoginsAsync(user),
                                 BrowserRemembered =
-                                    await this._signInManager.IsTwoFactorClientRememberedAsync(user)
+                                    await this.signInManager.IsTwoFactorClientRememberedAsync(user)
                             };
             return this.View(model);
         }
@@ -211,14 +211,14 @@ namespace GitLfs.Server.Caching.Controllers
         public async Task<IActionResult> LinkLogin(string provider)
         {
             // Clear the existing external cookie to ensure a clean login process
-            await this.HttpContext.Authentication.SignOutAsync(this._externalCookieScheme);
+            await this.HttpContext.Authentication.SignOutAsync(this.externalCookieScheme);
 
             // Request a redirect to the external login provider to link a login for the current user
             string redirectUrl = this.Url.Action(nameof(this.LinkLoginCallback), "Manage");
-            AuthenticationProperties properties = this._signInManager.ConfigureExternalAuthenticationProperties(
+            AuthenticationProperties properties = this.signInManager.ConfigureExternalAuthenticationProperties(
                 provider,
                 redirectUrl,
-                this._userManager.GetUserId(this.User));
+                this.userManager.GetUserId(this.User));
             return this.Challenge(properties, provider);
         }
 
@@ -233,20 +233,20 @@ namespace GitLfs.Server.Caching.Controllers
             }
 
             ExternalLoginInfo info =
-                await this._signInManager.GetExternalLoginInfoAsync(await this._userManager.GetUserIdAsync(user));
+                await this.signInManager.GetExternalLoginInfoAsync(await this.userManager.GetUserIdAsync(user));
             if (info == null)
             {
                 return this.RedirectToAction(nameof(this.ManageLogins), new { Message = ManageMessageId.Error });
             }
 
-            IdentityResult result = await this._userManager.AddLoginAsync(user, info);
+            IdentityResult result = await this.userManager.AddLoginAsync(user, info);
             var message = ManageMessageId.Error;
             if (result.Succeeded)
             {
                 message = ManageMessageId.AddLoginSuccess;
 
                 // Clear the existing external cookie to ensure a clean login process
-                await this.HttpContext.Authentication.SignOutAsync(this._externalCookieScheme);
+                await this.HttpContext.Authentication.SignOutAsync(this.externalCookieScheme);
             }
 
             return this.RedirectToAction(nameof(this.ManageLogins), new { Message = message });
@@ -269,8 +269,8 @@ namespace GitLfs.Server.Caching.Controllers
                 return this.View("Error");
             }
 
-            IList<UserLoginInfo> userLogins = await this._userManager.GetLoginsAsync(user);
-            List<AuthenticationDescription> otherLogins = this._signInManager.GetExternalAuthenticationSchemes()
+            IList<UserLoginInfo> userLogins = await this.userManager.GetLoginsAsync(user);
+            List<AuthenticationDescription> otherLogins = this.signInManager.GetExternalAuthenticationSchemes()
                 .Where(auth => userLogins.All(ul => auth.AuthenticationScheme != ul.LoginProvider)).ToList();
             this.ViewData["ShowRemoveButton"] = user.PasswordHash != null || userLogins.Count > 1;
             return this.View(new ManageLoginsViewModel { CurrentLogins = userLogins, OtherLogins = otherLogins });
@@ -286,10 +286,10 @@ namespace GitLfs.Server.Caching.Controllers
             if (user != null)
             {
                 IdentityResult result =
-                    await this._userManager.RemoveLoginAsync(user, account.LoginProvider, account.ProviderKey);
+                    await this.userManager.RemoveLoginAsync(user, account.LoginProvider, account.ProviderKey);
                 if (result.Succeeded)
                 {
-                    await this._signInManager.SignInAsync(user, false);
+                    await this.signInManager.SignInAsync(user, false);
                     message = ManageMessageId.RemoveLoginSuccess;
                 }
             }
@@ -305,10 +305,10 @@ namespace GitLfs.Server.Caching.Controllers
             ApplicationUser user = await this.GetCurrentUserAsync();
             if (user != null)
             {
-                IdentityResult result = await this._userManager.SetPhoneNumberAsync(user, null);
+                IdentityResult result = await this.userManager.SetPhoneNumberAsync(user, null);
                 if (result.Succeeded)
                 {
-                    await this._signInManager.SignInAsync(user, false);
+                    await this.signInManager.SignInAsync(user, false);
                     return this.RedirectToAction(
                         nameof(this.Index),
                         new { Message = ManageMessageId.RemovePhoneSuccess });
@@ -338,10 +338,10 @@ namespace GitLfs.Server.Caching.Controllers
             ApplicationUser user = await this.GetCurrentUserAsync();
             if (user != null)
             {
-                IdentityResult result = await this._userManager.AddPasswordAsync(user, model.NewPassword);
+                IdentityResult result = await this.userManager.AddPasswordAsync(user, model.NewPassword);
                 if (result.Succeeded)
                 {
-                    await this._signInManager.SignInAsync(user, false);
+                    await this.signInManager.SignInAsync(user, false);
                     return this.RedirectToAction(
                         nameof(this.Index),
                         new { Message = ManageMessageId.SetPasswordSuccess });
@@ -364,7 +364,7 @@ namespace GitLfs.Server.Caching.Controllers
                 return this.View("Error");
             }
 
-            string code = await this._userManager.GenerateChangePhoneNumberTokenAsync(user, phoneNumber);
+            string code = await this.userManager.GenerateChangePhoneNumberTokenAsync(user, phoneNumber);
 
             // Send an SMS to verify the phone number
             return phoneNumber == null
@@ -386,10 +386,10 @@ namespace GitLfs.Server.Caching.Controllers
             if (user != null)
             {
                 IdentityResult result =
-                    await this._userManager.ChangePhoneNumberAsync(user, model.PhoneNumber, model.Code);
+                    await this.userManager.ChangePhoneNumberAsync(user, model.PhoneNumber, model.Code);
                 if (result.Succeeded)
                 {
-                    await this._signInManager.SignInAsync(user, false);
+                    await this.signInManager.SignInAsync(user, false);
                     return this.RedirectToAction(nameof(this.Index), new { Message = ManageMessageId.AddPhoneSuccess });
                 }
             }
@@ -409,7 +409,7 @@ namespace GitLfs.Server.Caching.Controllers
 
         private Task<ApplicationUser> GetCurrentUserAsync()
         {
-            return this._userManager.GetUserAsync(this.HttpContext.User);
+            return this.userManager.GetUserAsync(this.HttpContext.User);
         }
     }
 }
