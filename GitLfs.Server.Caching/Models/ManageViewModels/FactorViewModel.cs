@@ -1,7 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="FactorViewModel.cs" company="Glenn Watson">
+//     Copyright (C) 2017. Glenn Watson
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Server.Caching.Models.ManageViewModels
 {
