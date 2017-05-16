@@ -7,6 +7,7 @@
 namespace GitLfs.Server.Caching
 {
     using System.IO;
+    using System.Security.Cryptography.X509Certificates;
 
     using Microsoft.AspNetCore.Hosting;
 
@@ -21,8 +22,10 @@ namespace GitLfs.Server.Caching
         /// <param name="args">The arguments passed to the applications.</param>
         public static void Main(string[] args)
         {
+            var cert = new X509Certificate2("test.pfx",
+                "test");
             IWebHost host = new WebHostBuilder()
-                .UseKestrel()
+                .UseKestrel(cfg => cfg.UseHttps(cert))
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()
                 .UseStartup<Startup>()

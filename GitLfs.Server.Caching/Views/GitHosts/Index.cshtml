@@ -1,4 +1,4 @@
-@model IEnumerable<GitLfs.Server.Caching.Models.GitRepository>
+@model IEnumerable<GitLfs.Core.GitHost>
 
 @{
     ViewData["Title"] = "Index";
@@ -22,7 +22,7 @@
                     @Html.DisplayNameFor(model => model.UserName)
                 </th>
                 <th>
-                    @Html.DisplayNameFor(model => model.Password)
+                    @Html.DisplayNameFor(model => model.Token)
                 </th>
             <th></th>
         </tr>
@@ -40,7 +40,7 @@
                 @Html.DisplayFor(modelItem => item.UserName)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.Password)
+                @Html.DisplayFor(modelItem => item.Token)
             </td>
             <td>
                 <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |

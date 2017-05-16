@@ -1,10 +1,10 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="GitRepository.cs" company="Glenn Watson">
+// <copyright file="GitHost.cs" company="Glenn Watson">
 //     Copyright (C) 2017. Glenn Watson
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace GitLfs.Server.Caching.Models
+namespace GitLfs.Core
 {
     using System.ComponentModel;
     using System.ComponentModel.DataAnnotations;
@@ -12,7 +12,7 @@ namespace GitLfs.Server.Caching.Models
     /// <summary>
     /// A repository for GIT.
     /// </summary>
-    public class GitRepository
+    public class GitHost
     {
         /// <summary>
         /// Gets or sets the Id of the git repository.
@@ -24,21 +24,21 @@ namespace GitLfs.Server.Caching.Models
         /// </summary>
         [Required]
         [Url]
-        [DisplayName("Repository URL")]
+        [DisplayName("Host URL")]
         public string Href { get; set; }
 
         /// <summary>
         /// Gets or sets the name of the GIT repository.
         /// </summary>
         [Required]
-        [DisplayName("Repository Name")]
+        [DisplayName("Host Name")]
         public string Name { get; set; }
 
         /// <summary>
         /// Gets or sets the user name on the GIT repository.
         /// </summary>
         [Required]
-        [DisplayName("Repository User Name")]
+        [DisplayName("Host User Name")]
         public string UserName { get; set; }
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace GitLfs.Server.Caching.Models
         /// </summary>
         [Required]
         [DataType(DataType.Password)]
-        [DisplayName("Repository Password")]
-        public string Password { get; set; }
+        [DisplayName("Host Authentication Token")]
+        public string Token { get; set; }
     }
 }

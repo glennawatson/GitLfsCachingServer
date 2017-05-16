@@ -10,15 +10,10 @@ namespace GitLfs.Core.BatchResponse
 
     using Newtonsoft.Json;
 
-    public class BatchObject
+    public class BatchObject : BatchObjectBase
     {
         public IList<BatchObjectAction> Actions { get; set; }
 
         public bool? Authenticated { get; set; }
-
-        [JsonProperty(PropertyName = "oid")]
-        public string ObjectId { get; set; }
-
-        public long Size { get; set; }
     }
 }

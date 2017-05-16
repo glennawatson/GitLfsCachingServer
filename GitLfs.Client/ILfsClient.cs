@@ -7,7 +7,11 @@
 namespace GitLfs.Client
 {
     using System.Collections.Generic;
+    using System.IO;
     using System.Threading.Tasks;
+
+    using GitLfs.Core;
+    using GitLfs.Core.BatchRequest;
 
     /// <summary>
     /// Represents a GIT LFS client.
@@ -17,15 +21,19 @@ namespace GitLfs.Client
         /// <summary>
         /// Downloads a file.
         /// </summary>
-        /// <param name="objectId">The object id of the object.</param>
+        /// <param name="host">The host details where to download the file.</param>
+        /// <param name="repositoryName">The repository name.</param>
+        /// <param name="request">The item to download.</param>
         /// <returns>The location on the local file system where the file is located.</returns>
-        Task<string> DownloadFile(string objectId);
+        Task<Stream> DownloadFile(GitHost host, string repositoryName, RequestObject request);
 
         /// <summary>
-        /// Downloads several files.
+        /// Uploads the selected file to the remote server.
         /// </summary>
-        /// <param name="objectIds">The object ids of items to download.</param>
-        /// <returns>The list of file paths.</returns>
-        Task<IEnumerable<string>> DownloadFiles(IEnumerable<string> objectIds);
+        /// <param name="host">The host details where to upload the file.</param>
+        /// <param name="repositoryName">The repository name.</param>
+        /// <param name="objectId">The item to upload.</param>
+        /// <returns>A task to monitor the progress.</returns>
+        Task UploadFile(GitHost host, string repositoryName, string objectId);
     }
 }

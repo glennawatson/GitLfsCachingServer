@@ -6,11 +6,19 @@
 
 namespace GitLfs.Server.Caching
 {
+    using System.IO;
+    using System.Net;
+    using System.Threading.Tasks;
+
+    using GitLfs.Client;
     using GitLfs.Core.BatchRequest;
+    using GitLfs.Core.BatchResponse;
+    using GitLfs.Core.Managers;
     using GitLfs.Server.Caching.Data;
     using GitLfs.Server.Caching.Models;
     using GitLfs.Server.Caching.Services;
 
+    using Microsoft.AspNetCore.Authentication.Cookies;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -18,6 +26,8 @@ namespace GitLfs.Server.Caching
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
+
+    using Newtonsoft.Json;
 
     /// <summary>
     /// The startup object where we register all our details about our web site.
@@ -75,7 +85,11 @@ namespace GitLfs.Server.Caching
             app.UseIdentity();
 
             // Add external authentication middle ware below. To configure them please see https://go.microsoft.com/fwlink/?LinkID=532715
-            app.UseMvc(routes => { routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}"); });
+            app.UseMvc(
+                routes =>
+                    {
+                        routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}");
+                    });
         }
 
         /// <summary>
@@ -86,18 +100,37 @@ namespace GitLfs.Server.Caching
         {
             // Add framework services.
             services.AddDbContext<ApplicationDbContext>(
-                options => options.UseSqlServer(this.Configuration.GetConnectionString("DefaultConnection")));
+                options => options.UseSqlite(this.Configuration.GetConnectionString("DefaultConnection")));
 
-            services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>()
+            // Disable auto redirect on the api based syntax.
+            services.AddIdentity<ApplicationUser, IdentityRole>(
+                    options =>
+                        {
+                            options.Cookies.ApplicationCookie.Events = new CookieAuthenticationEvents
+                                                                          {
+                                                                              OnRedirectToLogin = ctx =>
+                                                                                  {
+                                                                                      if (!ctx.Request.Path.StartsWithSegments("/api"))
+                                                                                      {
+                                                                                          ctx.Response.Redirect(ctx.RedirectUri);
+                                                                                      }
+
+                                                                                      return Task.FromResult(0);
+                                                                                  }
+                                                                          };
+                        })
+                .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
 
-            services.AddMvc();
-
-            services.AddSingleton<IRequestSerialiser>(new JsonRequestSerialiser());
+            services.AddMvc().AddJsonOptions(options => options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore);
 
             // Add application services.
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
+            services.AddSingleton<IRequestSerialiser>(new JsonRequestSerialiser());
+            services.AddSingleton<ITransferSerialiser>(new JsonTransferSerialiser());
+            services.AddSingleton<IFileManager, LfsFileManager>();
+            services.AddTransient<ILfsClient, FileCachingLfsClient>();
         }
     }
 }

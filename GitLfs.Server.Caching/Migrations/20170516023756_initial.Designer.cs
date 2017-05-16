@@ -5,17 +5,41 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using GitLfs.Server.Caching.Data;
 
-namespace GitLfs.Server.Caching.Data.Migrations
+namespace GitLfs.Server.Caching.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20170515051652_GitRepo")]
-    partial class GitRepo
+    [Migration("20170516023756_initial")]
+    partial class initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
             modelBuilder
-                .HasAnnotation("ProductVersion", "1.1.2")
-                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                .HasAnnotation("ProductVersion", "1.1.2");
+
+            modelBuilder.Entity("GitLfs.Core.GitHost", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<string>("Href")
+                        .IsRequired();
+
+                    b.Property<string>("Name")
+                        .IsRequired();
+
+                    b.Property<string>("Token")
+                        .IsRequired();
+
+                    b.Property<string>("UserName")
+                        .IsRequired();
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("GitHost");
+                });
 
             modelBuilder.Entity("GitLfs.Server.Caching.Models.ApplicationUser", b =>
                 {
@@ -67,26 +91,21 @@ namespace GitLfs.Server.Caching.Data.Migrations
                     b.ToTable("AspNetUsers");
                 });
 
-            modelBuilder.Entity("GitLfs.Server.Caching.Models.GitRepository", b =>
+            modelBuilder.Entity("GitLfs.Server.Caching.Models.GitLfsFile", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<string>("Href")
-                        .IsRequired();
+                    b.Property<string>("ObjectId");
 
-                    b.Property<string>("Name")
-                        .IsRequired();
-
-                    b.Property<string>("Password")
-                        .IsRequired();
-
-                    b.Property<string>("UserName")
-                        .IsRequired();
+                    b.Property<long>("Size");
 
                     b.HasKey("Id");
 
-                    b.ToTable("GitRepository");
+                    b.HasIndex("ObjectId")
+                        .IsUnique();
+
+                    b.ToTable("LfsFiles");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.EntityFrameworkCore.IdentityRole", b =>
