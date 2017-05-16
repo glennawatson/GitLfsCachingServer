@@ -22,10 +22,8 @@ namespace GitLfs.Server.Caching
         /// <param name="args">The arguments passed to the applications.</param>
         public static void Main(string[] args)
         {
-            var cert = new X509Certificate2("test.pfx",
-                "test");
             IWebHost host = new WebHostBuilder()
-                .UseKestrel(cfg => cfg.UseHttps(cert))
+                .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()
                 .UseStartup<Startup>()
