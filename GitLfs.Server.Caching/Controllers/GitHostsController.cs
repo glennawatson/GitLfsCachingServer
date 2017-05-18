@@ -16,25 +16,39 @@ namespace GitLfs.Server.Caching.Controllers
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.EntityFrameworkCore;
 
+    /// <summary>
+    /// Hosts controller for the git hosts.
+    /// </summary>
     [Authorize]
     public class GitHostsController : Controller
     {
         private readonly ApplicationDbContext context;
 
+        /// <summary>
+        /// Initializes a new instance of the GitHostsController class.
+        /// </summary>
+        /// <param name="context">The database context to allow changing of the database.</param>
         public GitHostsController(ApplicationDbContext context)
         {
             this.context = context;
         }
 
-        // GET: GitHosts/Create
+        /// <summary>
+        /// Creates a new view for creating a GitHost object.
+        /// </summary>
+        /// <returns>A action to monitor the progress.</returns>
         public IActionResult Create()
         {
             return this.View();
         }
 
-        // POST: GitHosts/Create
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
+        /// <summary>
+        /// Creates a new GitHost.
+        /// To protect from overposting attacks, please enable the specific properties you want to bind to, for 
+        /// more details see http://go.microsoft.com/fwlink/?LinkId=317598.
+        /// </summary>
+        /// <param name="gitHost">The new GitHost object to create.</param>
+        /// <returns>A action result with the status.</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Href,Name,UserName,Token")] GitHost gitHost)
@@ -49,7 +63,11 @@ namespace GitLfs.Server.Caching.Controllers
             return this.View(gitHost);
         }
 
-        // GET: GitHosts/Delete/5
+        /// <summary>
+        /// Deltes a GitHost object from the database with the specified ID.
+        /// </summary>
+        /// <param name="id">The ID to delete.</param>
+        /// <returns>A action result to monitor the progress.</returns>
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -66,7 +84,11 @@ namespace GitLfs.Server.Caching.Controllers
             return this.View(gitHost);
         }
 
-        // POST: GitHosts/Delete/5
+        /// <summary>
+        /// Confirm screen to show that the object has been deleted.
+        /// </summary>
+        /// <param name="id">The ID of the item that has been deleted.</param>
+        /// <returns>A result to monitor the progress.</returns>
         [HttpPost]
         [ActionName("Delete")]
         [ValidateAntiForgeryToken]
@@ -78,7 +100,11 @@ namespace GitLfs.Server.Caching.Controllers
             return this.RedirectToAction("Index");
         }
 
-        // GET: GitHosts/Details/5
+        /// <summary>
+        /// Shows a view with the details of the specified GitHost id.
+        /// </summary>
+        /// <param name="id">The ID to get the details for.</param>
+        /// <returns>A task to monitor the progress.</returns>
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -95,7 +121,11 @@ namespace GitLfs.Server.Caching.Controllers
             return this.View(gitHost);
         }
 
-        // GET: GitHosts/Edit/5
+        /// <summary>
+        /// Allows editing of the specified GitHost using the specified ID.
+        /// </summary>
+        /// <param name="id">The ID of the GitHost object.</param>
+        /// <returns>A action result to monitor the progress.</returns>
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -147,7 +177,10 @@ namespace GitLfs.Server.Caching.Controllers
             return this.View(gitHost);
         }
 
-        // GET: GitHosts
+        /// <summary>
+        /// Shows the main view where it lists the GitHost objects in the Database.
+        /// </summary>
+        /// <returns>A task to monitor the progress.</returns>
         public async Task<IActionResult> Index()
         {
             return this.View(await this.context.GitHost.ToListAsync());
