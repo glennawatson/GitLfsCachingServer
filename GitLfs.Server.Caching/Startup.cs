@@ -15,6 +15,7 @@ namespace GitLfs.Server.Caching
     using GitLfs.Core.BatchResponse;
     using GitLfs.Core.Managers;
     using GitLfs.Server.Caching.Data;
+    using GitLfs.Server.Caching.Middleware;
     using GitLfs.Server.Caching.Models;
     using GitLfs.Server.Caching.Services;
 
@@ -22,6 +23,7 @@ namespace GitLfs.Server.Caching
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+    using Microsoft.AspNetCore.Rewrite;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
@@ -83,6 +85,8 @@ namespace GitLfs.Server.Caching
             app.UseStaticFiles();
 
             app.UseIdentity();
+
+            app.UseGitForwarding();
 
             // Add external authentication middle ware below. To configure them please see https://go.microsoft.com/fwlink/?LinkID=532715
             app.UseMvc(

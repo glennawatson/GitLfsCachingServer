@@ -122,9 +122,7 @@ namespace GitLfs.Server.Caching.Controllers
 
         private async Task<Transfer> HandleRequest(Request request, int hostId, string repositoryName)
         {
-            var response = new Transfer();
-            response.Mode = TransferMode.Basic;
-            response.Objects = new List<BatchObjectBase>();
+            var response = new Transfer { Mode = TransferMode.Basic, Objects = new List<BatchObjectBase>() };
             foreach (RequestObject item in request.Objects)
             {
                 GitLfsFile file = await this.context.LfsFiles.SingleOrDefaultAsync(x => x.ObjectId == item.ObjectId);
