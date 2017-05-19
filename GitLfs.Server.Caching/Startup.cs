@@ -7,12 +7,12 @@
 namespace GitLfs.Server.Caching
 {
     using System.IO;
-    using System.Net;
     using System.Threading.Tasks;
 
     using GitLfs.Client;
     using GitLfs.Core.BatchRequest;
     using GitLfs.Core.BatchResponse;
+    using GitLfs.Core.Error;
     using GitLfs.Core.Managers;
     using GitLfs.Server.Caching.Data;
     using GitLfs.Server.Caching.Formatters;
@@ -24,7 +24,6 @@ namespace GitLfs.Server.Caching
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-    using Microsoft.AspNetCore.Rewrite;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
@@ -72,16 +71,16 @@ namespace GitLfs.Server.Caching
             loggerFactory.AddConsole(this.Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
 
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-                app.UseDatabaseErrorPage();
-                app.UseBrowserLink();
-            }
-            else
-            {
-                app.UseExceptionHandler("/Home/Error");
-            }
+            //if (env.IsDevelopment())
+            //{
+            //    app.UseDeveloperExceptionPage();
+            //    app.UseDatabaseErrorPage();
+            //    app.UseBrowserLink();
+            //}
+            //else
+            //{
+            //    app.UseExceptionHandler("/Home/Error");
+            //}
 
             app.UseStaticFiles();
 
@@ -139,8 +138,9 @@ namespace GitLfs.Server.Caching
             // Add application services.
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
-            services.AddSingleton<IRequestSerialiser>(new JsonRequestSerialiser());
-            services.AddSingleton<ITransferSerialiser>(new JsonTransferSerialiser());
+            services.AddSingleton<IBatchRequestSerialiser>(new JsonBatchRequestSerialiser());
+            services.AddSingleton<IBatchTransferSerialiser>(new JsonBatchTransferSerialiser());
+            services.AddSingleton<IErrorResponseSerialiser>(new JsonErrorResponseSerialiser());
             services.AddSingleton<IFileManager, LfsFileManager>();
             services.AddTransient<ILfsClient, FileCachingLfsClient>();
         }

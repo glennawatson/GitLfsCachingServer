@@ -12,7 +12,6 @@ namespace GitLfs.Client
     using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
-    using System.Text;
     using System.Threading.Tasks;
 
     using GitLfs.Core;
@@ -20,112 +19,145 @@ namespace GitLfs.Client
     using GitLfs.Core.BatchResponse;
     using GitLfs.Core.Managers;
 
+    using Microsoft.Extensions.Logging;
+
     public class FileCachingLfsClient : ILfsClient
     {
         private readonly IFileManager fileManager;
 
-        private readonly IRequestSerialiser requestSerialiser;
+        private readonly IBatchRequestSerialiser requestSerialiser;
 
-        private readonly ITransferSerialiser transferSerialiser;
+        private readonly IBatchTransferSerialiser transferSerialiser;
+
+        private readonly ILogger logger;
 
         public FileCachingLfsClient(
             IFileManager fileManager,
-            IRequestSerialiser requestSerialiser,
-            ITransferSerialiser transferSerialiser)
+            IBatchRequestSerialiser requestSerialiser,
+            IBatchTransferSerialiser transferSerialiser,
+            ILogger<FileCachingLfsClient> logger)
         {
             this.fileManager = fileManager;
             this.requestSerialiser = requestSerialiser;
             this.transferSerialiser = transferSerialiser;
+            this.logger = logger;
         }
 
         /// <inheritdoc />
-        public async Task<Stream> DownloadFile(GitHost host, string repositoryName, RequestObject requestObject)
+        public async Task<Stream> DownloadFile(GitHost host, string repositoryName, BatchRequestObject requestObject)
         {
-            using (var httpClient = this.CreateBatchClient(host))
+            IEnumerable<BatchObjectAction> actions = await this.SendBatchRequest(host, repositoryName, requestObject, BatchRequestMode.Download);
+            BatchObjectAction action = actions.SingleOrDefault();
+
+            using (var httpClient = new HttpClient())
             {
-                var request = new Request
-                                  {
-                                      Objects = new List<RequestObject> { requestObject },
-                                      Operation = RequestMode.Download,
-                                      Transfers = new List<TransferMode> { TransferMode.Basic }
-                                  };
+                SetClientHeaders(action, httpClient);
 
-                var url = new Uri($"{host.Href}/{repositoryName}/info/lfs/objects/batch");
-                HttpResponseMessage result = await this.PostBatchRequest(httpClient, url, request);
+                Stream stream = await httpClient.GetStreamAsync(action.HRef);
+                return new FileStream(
+                    await this.fileManager.SaveFileForObjectId(repositoryName, requestObject.ObjectId, stream),
+                    FileMode.Open,
+                    FileAccess.Read);
+            }
+        }
 
-                if (result.IsSuccessStatusCode == false)
+        /// <inheritdoc />
+        public async Task UploadFile(GitHost host, string repositoryName, BatchRequestObject requestObject)
+        {
+            IEnumerable<BatchObjectAction> action = await this.SendBatchRequest(host, repositoryName, requestObject, BatchRequestMode.Upload);
+
+            using (var httpClient = new HttpClient())
+            {
+                SetClientHeaders(action, httpClient);
+
+                Stream stream = this.fileManager.GetFileForObjectId(repositoryName, requestObject.ObjectId);
+
+                using (var content = new StreamContent(stream))
                 {
-                    throw new ClientDownloadException(result.StatusCode, result.ReasonPhrase);
-                }
+                    content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
+                    logger.LogInformation($"Uploading to {action.HRef} with repository name {repositoryName}, request:{requestObject.ObjectId.Substring(0, 10)}/{requestObject.Size}");
+                    var result = await httpClient.PutAsync(action.HRef, content);
 
-                Transfer transfer = this.transferSerialiser.FromString(await result.Content.ReadAsStringAsync());
-
-                if (transfer.Objects.Count != 1)
-                {
-                    throw new Exception("Got the wrong number of objects back from the server.");
-                }
-
-                BatchObjectBase objectValue = transfer.Objects.Single();
-
-                BatchObjectError error = objectValue as BatchObjectError;
-
-                if (error != null)
-                {
-                    throw new ClientDownloadException(error.ErrorCode, error.ErrorMessage);    
-                }
-
-                BatchObject batchObjectFile = objectValue as BatchObject;
-
-                if (batchObjectFile == null)
-                {
-                    throw new ClientDownloadException(404, "We got a invalid batch object back");
-                }
-
-                BatchObjectAction action = batchObjectFile.Actions.Single();
-                using (var downloadHttpClient = new HttpClient())
-                {
-                    if (action.Headers != null)
+                    if (result.IsSuccessStatusCode == false)
                     {
-                        foreach (KeyValuePair<string, string> header in action.Headers)
-                        {
-                            downloadHttpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
-                        }
+                        logger.LogWarning($"Failed to download request:{requestObject.ObjectId.Substring(0, 10)}/{requestObject.Size}");
+                        throw new ClientException(result.StatusCode, result.ReasonPhrase);
                     }
-
-                    Stream stream = await downloadHttpClient.GetStreamAsync(action.HRef);
-                    return new FileStream(
-                        await this.fileManager.SaveFileForObjectId(repositoryName, requestObject.ObjectId, stream),
-                        FileMode.Open,
-                        FileAccess.Read);
                 }
             }
         }
 
-        private async Task<HttpResponseMessage> PostBatchRequest(HttpClient httpClient, Uri url, Request request)
+        private static void SetClientHeaders(BatchObjectAction action, HttpClient downloadHttpClient)
         {
-            HttpResponseMessage result = await httpClient.PostAsync(
-                                             url,
-                                             new StringContent(
-                                                 this.requestSerialiser.ToString(request),
-                                                 null,
-                                                 "application/vnd.git-lfs+json"));
-            return result;
+            if (action.Headers != null)
+            {
+                foreach (KeyValuePair<string, string> header in action.Headers)
+                {
+                    downloadHttpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
+                }
+            }
         }
 
-        /// <inheritdoc />
-        public async Task UploadFile(GitHost host, string repositoryName, string objectId)
+        private static Uri GetLfsBatchUrl(GitHost host, string repositoryName)
         {
-
+            var url = new Uri($"{host.Href}/{repositoryName}/info/lfs/objects/batch");
+            return url;
         }
 
-        private HttpClient CreateBatchClient(GitHost host)
+        private async Task<IEnumerable<BatchObjectAction>> SendBatchRequest(GitHost host, string repositoryName, BatchRequestObject requestObject, BatchRequestMode requestMode)
         {
-            HttpClient client = new HttpClient();
-            client.DefaultRequestHeaders.Accept.Clear();
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.git-lfs+json"));
-            var authValue = new AuthenticationHeaderValue("token", host.Token);
-            client.DefaultRequestHeaders.Authorization = authValue;
-            return client;
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.git-lfs+json"));
+                var authValue = new AuthenticationHeaderValue("token", host.Token);
+                client.DefaultRequestHeaders.Authorization = authValue;
+
+                var request = new BatchRequest
+                {
+                    Objects = new List<BatchRequestObject> { requestObject },
+                    Operation = requestMode,
+                    Transfers = new List<TransferMode> { TransferMode.Basic }
+                };
+
+                using (var content = new StringContent(
+                    this.requestSerialiser.ToString(request),
+                    null,
+                    "application/vnd.git-lfs+json"))
+                {
+                    HttpResponseMessage result = await client.PostAsync(GetLfsBatchUrl(host, repositoryName), content);
+
+                    if (result.IsSuccessStatusCode == false)
+                    {
+                        throw new ClientException(result.StatusCode, result.ReasonPhrase);
+                    }
+
+                    BatchTransfer transfer = this.transferSerialiser.FromString(await result.Content.ReadAsStringAsync());
+
+                    if (transfer.Objects.Count != 1)
+                    {
+                        throw new ClientException(500, "Got the wrong number of objects back from the server.");
+                    }
+
+                    BatchObjectBase objectValue = transfer.Objects.Single();
+
+                    BatchObjectError error = objectValue as BatchObjectError;
+
+                    if (error != null)
+                    {
+                        throw new ClientException(error.ErrorCode, error.ErrorMessage);
+                    }
+
+                    BatchObject batchObjectFile = objectValue as BatchObject;
+
+                    if (batchObjectFile == null)
+                    {
+                        throw new ClientException(404, "We got a invalid batch object back");
+                    }
+
+                    return batchObjectFile.Actions;
+                }
+            }
         }
     }
 }

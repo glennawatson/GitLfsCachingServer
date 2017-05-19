@@ -1,12 +1,18 @@
-﻿namespace GitLfs.Server.Caching.Formatters
+﻿// <copyright file="GitLfsOutputFormatter.cs" company="Glenn Watson">
+//     Copyright (C) 2017. Glenn Watson
+// </copyright>
+
+namespace GitLfs.Server.Caching.Formatters
 {
     using System;
     using System.Reflection;
     using System.Text;
     using System.Threading.Tasks;
 
+    using GitLfs.Core;
     using GitLfs.Core.BatchRequest;
     using GitLfs.Core.BatchResponse;
+    using GitLfs.Core.Error;
 
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Mvc.Formatters;
@@ -17,10 +23,10 @@
     {
         public GitLfsOutputFormatter()
         {
-            SupportedMediaTypes.Add(MediaTypeHeaderValue.Parse("application/vnd.git-lfs+json"));
+            this.SupportedMediaTypes.Add(MediaTypeHeaderValue.Parse("application/vnd.git-lfs+json"));
 
-            SupportedEncodings.Add(Encoding.UTF8);
-            SupportedEncodings.Add(Encoding.Unicode);
+            this.SupportedEncodings.Add(Encoding.UTF8);
+            this.SupportedEncodings.Add(Encoding.Unicode);
         }
 
         /// <inheritdoc />
@@ -29,23 +35,33 @@
             IServiceProvider serviceProvider = context.HttpContext.RequestServices;
             HttpResponse response = context.HttpContext.Response;
 
-            IRequestSerialiser requestSerialiser = serviceProvider.GetService<IRequestSerialiser>();
-            ITransferSerialiser transferSerialiser = serviceProvider.GetService<ITransferSerialiser>();
+            var requestSerialiser = serviceProvider.GetService<IBatchRequestSerialiser>();
+            var transferSerialiser = serviceProvider.GetService<IBatchTransferSerialiser>();
+            var responseSerialiser = serviceProvider.GetService<IErrorResponseSerialiser>();
 
-            Transfer transfer = context.Object as Transfer;
+            var transfer = context.Object as BatchTransfer;
 
             if (transfer != null)
             {
-                var content = transferSerialiser.ToString(transfer);
+                string content = transferSerialiser.ToString(transfer);
 
                 return response.WriteAsync(content);
             }
 
-            Request request = context.Object as Request;
+            var request = context.Object as BatchRequest;
 
             if (request != null)
             {
-                var content = requestSerialiser.ToString(request);
+                string content = requestSerialiser.ToString(request);
+
+                return response.WriteAsync(content);
+            }
+
+            var errorResponse = context.Object as ErrorResponse;
+
+            if (errorResponse != null)
+            {
+                string content = responseSerialiser.ToString(errorResponse);
 
                 return response.WriteAsync(content);
             }
@@ -56,7 +72,8 @@
         /// <inheritdoc />
         protected override bool CanWriteType(Type type)
         {
-            if (type.IsAssignableFrom(typeof(Transfer)) || type.IsAssignableFrom(typeof(Request)))
+            if (type.IsAssignableFrom(typeof(BatchTransfer)) || type.IsAssignableFrom(typeof(BatchRequest))
+                || type.IsAssignableFrom(typeof(ErrorResponse)))
             {
                 return base.CanWriteType(type);
             }

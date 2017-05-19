@@ -11,7 +11,7 @@ namespace GitLfs.Core.BatchResponse
     /// <summary>
     /// Represents a transfer from the batch api in git LFS.
     /// </summary>
-    public class Transfer
+    public class BatchTransfer
     {
         /// <summary>
         /// The mode of the transfer.

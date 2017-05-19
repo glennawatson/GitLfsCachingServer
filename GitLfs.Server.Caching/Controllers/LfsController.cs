@@ -15,6 +15,7 @@ namespace GitLfs.Server.Caching.Controllers
     using GitLfs.Core;
     using GitLfs.Core.BatchRequest;
     using GitLfs.Core.BatchResponse;
+    using GitLfs.Core.Error;
     using GitLfs.Core.Managers;
     using GitLfs.Server.Caching.Data;
     using GitLfs.Server.Caching.Models;
@@ -35,10 +36,7 @@ namespace GitLfs.Server.Caching.Controllers
 
         private readonly ILfsClient lfsClient;
 
-        public LfsController(
-            ApplicationDbContext context,
-            IFileManager fileManager,
-            ILfsClient lfsClient)
+        public LfsController(ApplicationDbContext context, IFileManager fileManager, ILfsClient lfsClient)
         {
             this.context = context;
             this.fileManager = fileManager;
@@ -61,7 +59,7 @@ namespace GitLfs.Server.Caching.Controllers
 
                 if (file == null)
                 {
-                    return this.NotFound(new ErrorResponse() { Message = "Invalid file id." });
+                    return this.NotFound(new ErrorResponse { Message = "Invalid file id." });
                 }
 
                 Stream stream = this.fileManager.GetFileForObjectId(repositoryName, objectId);
@@ -71,14 +69,51 @@ namespace GitLfs.Server.Caching.Controllers
                     stream = await this.lfsClient.DownloadFile(
                                  host,
                                  repositoryName,
-                                 new RequestObject { ObjectId = objectId, Size = file.Size });
+                                 new BatchRequestObject { ObjectId = objectId, Size = file.Size });
                 }
 
                 return this.File(stream, "application/octet-stream");
             }
-            catch (ClientDownloadException ex)
+            catch (ClientException ex)
             {
                 return this.StatusCode(ex.StatusCode, new ErrorResponse { Message = ex.Message });
+            }
+        }
+
+        [HttpPut("/api/{hostId}/{repositoryName}/info/lfs/{objectId}")]
+        public async Task<IActionResult> UploadFile(int hostId, string repositoryName, string objectId)
+        {
+            try
+            {
+                GitHost host = await this.context.GitHost.FindAsync(hostId);
+
+                if (host == null)
+                {
+                    return this.NotFound(new ErrorResponse { Message = "Not a valid host id." });
+                }
+
+                GitLfsFile file = await this.context.LfsFiles.SingleOrDefaultAsync(x => x.ObjectId == objectId);
+
+                if (file == null)
+                {
+                    return this.NotFound(new ErrorResponse { Message = "Invalid file id." });
+                }
+
+                Stream body = this.HttpContext.Request.Body;
+
+                await this.fileManager.SaveFileForObjectId(repositoryName, objectId, body);
+
+                await this.lfsClient.UploadFile(host, repositoryName, new BatchRequestObject { ObjectId = objectId, Size = file.Size });
+
+                return this.Ok();
+            }
+            catch (ClientException ex)
+            {
+                return this.StatusCode(ex.StatusCode, new ErrorResponse { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return this.StatusCode(500, new ErrorResponse { Message = ex.Message });
             }
         }
 
@@ -86,7 +121,7 @@ namespace GitLfs.Server.Caching.Controllers
         public async Task<IActionResult> HandleBatchRequest(
             int hostId,
             string repositoryName,
-            [FromBody] Request request)
+            [FromBody] BatchRequest request)
         {
             GitHost host = await this.context.GitHost.FindAsync(hostId);
 
@@ -98,29 +133,10 @@ namespace GitLfs.Server.Caching.Controllers
             return this.Ok(await this.HandleRequest(request, hostId, repositoryName));
         }
 
-        [HttpPut("/api/{hostId}/{repositoryName}/info/lfs/{objectId}")]
-        public async Task<IActionResult> UploadFile(int hostId, string repositoryName, string objectId)
+        private async Task<BatchTransfer> HandleRequest(BatchRequest request, int hostId, string repositoryName)
         {
-            GitHost host = await this.context.GitHost.FindAsync(hostId);
-
-            if (host == null)
-            {
-                return this.NotFound(new ErrorResponse { Message = "Not a valid host id." });
-            }
-
-            Stream body = this.HttpContext.Request.Body;
-
-            string fileName = await this.fileManager.SaveFileForObjectId(repositoryName, objectId, body);
-
-            await this.lfsClient.UploadFile(host, repositoryName, objectId);
-
-            return this.Ok();
-        }
-
-        private async Task<Transfer> HandleRequest(Request request, int hostId, string repositoryName)
-        {
-            var response = new Transfer { Mode = TransferMode.Basic, Objects = new List<BatchObjectBase>() };
-            foreach (RequestObject item in request.Objects)
+            var response = new BatchTransfer { Mode = TransferMode.Basic, Objects = new List<BatchObjectBase>() };
+            foreach (BatchRequestObject item in request.Objects)
             {
                 GitLfsFile file = await this.context.LfsFiles.SingleOrDefaultAsync(x => x.ObjectId == item.ObjectId);
 
@@ -143,7 +159,8 @@ namespace GitLfs.Server.Caching.Controllers
                             new BatchObjectAction
                                 {
                                     HRef = location.AbsoluteUri,
-                                    Mode = request.Operation == RequestMode.Upload
+                                    Mode = request.Operation == BatchRequestMode
+                                               .Upload
                                                ? BatchActionMode.Upload
                                                : BatchActionMode.Download
                                 }

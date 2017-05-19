@@ -8,18 +8,18 @@ namespace GitLfs.Core.BatchResponse
 {
     using System;
 
-    public class TransferParseException : Exception
+    public class BatchTransferParseException : Exception
     {
-        public TransferParseException()
+        public BatchTransferParseException()
         {
         }
 
-        public TransferParseException(string message)
+        public BatchTransferParseException(string message)
             : base(message)
         {
         }
 
-        public TransferParseException(string message, Exception innerException)
+        public BatchTransferParseException(string message, Exception innerException)
             : base(message, innerException)
         {
         }

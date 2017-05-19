@@ -94,9 +94,10 @@
 
             var newPath = match.Groups[2].Value;
 
-            requestMessage.Headers.Host = "github.com";
-            var uriString = $"{gitHost.Href}/{context.Request.PathBase}{newPath}{context.Request.QueryString}";
-            requestMessage.RequestUri = new Uri(uriString);
+            var uri = new Uri($"{gitHost.Href}/{context.Request.PathBase}{newPath}{context.Request.QueryString}");
+
+            requestMessage.Headers.Host = uri.Host;
+            requestMessage.RequestUri = uri;
             requestMessage.Method = new HttpMethod(context.Request.Method);
             using (var responseMessage = await this.httpClient.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted))
             {

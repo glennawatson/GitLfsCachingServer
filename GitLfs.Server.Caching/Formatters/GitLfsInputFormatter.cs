@@ -8,11 +8,13 @@ namespace GitLfs.Server.Caching.Formatters
 {
     using System;
     using System.IO;
+    using System.Reflection;
     using System.Text;
     using System.Threading.Tasks;
 
     using GitLfs.Core.BatchRequest;
     using GitLfs.Core.BatchResponse;
+    using GitLfs.Core.Error;
 
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Mvc.Formatters;
@@ -48,8 +50,9 @@ namespace GitLfs.Server.Caching.Formatters
 
             IServiceProvider serviceProvider = context.HttpContext.RequestServices;
 
-            var requestSerialiser = serviceProvider.GetService<IRequestSerialiser>();
-            var transferSerialiser = serviceProvider.GetService<ITransferSerialiser>();
+            var requestSerialiser = serviceProvider.GetService<IBatchRequestSerialiser>();
+            var transferSerialiser = serviceProvider.GetService<IBatchTransferSerialiser>();
+            var responseSerialiser = serviceProvider.GetService<IErrorResponseSerialiser>();
 
             HttpRequest request = context.HttpContext.Request;
 
@@ -58,22 +61,41 @@ namespace GitLfs.Server.Caching.Formatters
                 string contents = await reader.ReadToEndAsync();
                 try
                 {
-                    Request lfsRequest = requestSerialiser.FromString(contents);
+                    BatchRequest lfsRequest = requestSerialiser.FromString(contents);
                     return await InputFormatterResult.SuccessAsync(lfsRequest);
                 }
                 catch (JsonException)
                 {
                     try
                     {
-                        Transfer transfer = transferSerialiser.FromString(contents);
-                        return await InputFormatterResult.SuccessAsync(transfer);
+                        ErrorResponse response = responseSerialiser.FromString(contents);
+                        return await InputFormatterResult.SuccessAsync(response);
                     }
-                    catch (Exception)
+                    catch
                     {
-                        return await InputFormatterResult.FailureAsync();
+                        try
+                        {
+                            BatchTransfer transfer = transferSerialiser.FromString(contents);
+                            return await InputFormatterResult.SuccessAsync(transfer);
+                        }
+                        catch (Exception)
+                        {
+                            return await InputFormatterResult.FailureAsync();
+                        }
                     }
                 }
             }
+        }
+
+        /// <inheritdoc />
+        protected override bool CanReadType(Type type)
+        {
+            if (type.IsAssignableFrom(typeof(BatchTransfer)) || type.IsAssignableFrom(typeof(BatchRequest)) || type.IsAssignableFrom(typeof(ErrorResponse)))
+            {
+                return base.CanReadType(type);
+            }
+
+            return false;
         }
     }
 }
