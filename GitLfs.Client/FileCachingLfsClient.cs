@@ -84,9 +84,12 @@ namespace GitLfs.Client
                 BatchObjectAction action = batchObjectFile.Actions.Single();
                 using (var downloadHttpClient = new HttpClient())
                 {
-                    foreach (KeyValuePair<string, string> header in action.Headers)
+                    if (action.Headers != null)
                     {
-                        downloadHttpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
+                        foreach (KeyValuePair<string, string> header in action.Headers)
+                        {
+                            downloadHttpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
+                        }
                     }
 
                     Stream stream = await downloadHttpClient.GetStreamAsync(action.HRef);

@@ -35,7 +35,7 @@ namespace GitLfs.Core.Managers
 
             string repositoryRoot = Path.Combine(this.hostingEnvironment.ContentRootPath, "lfs");
 
-            if (Directory.Exists(repositoryRoot))
+            if (Directory.Exists(repositoryRoot) == false)
             {
                 return null;
             }

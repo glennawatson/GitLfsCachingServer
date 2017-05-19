@@ -10,15 +10,8 @@
 
   <PropertyGroup>
     <UserSecretsId>aspnet-GitLfs.Server.Caching-32bbd197-2829-421b-83e0-a3017e9e96ec</UserSecretsId>
+    <DockerComposeProjectPath>..\docker-compose.dcproj</DockerComposeProjectPath>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Remove="test.pfx" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="test.pfx" />
-  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.0.0" />
     <PackageReference Include="Microsoft.AspNetCore" Version="1.1.2" />

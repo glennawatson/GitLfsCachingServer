@@ -15,6 +15,7 @@ namespace GitLfs.Server.Caching
     using GitLfs.Core.BatchResponse;
     using GitLfs.Core.Managers;
     using GitLfs.Server.Caching.Data;
+    using GitLfs.Server.Caching.Formatters;
     using GitLfs.Server.Caching.Middleware;
     using GitLfs.Server.Caching.Models;
     using GitLfs.Server.Caching.Services;
@@ -126,7 +127,14 @@ namespace GitLfs.Server.Caching
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
 
-            services.AddMvc().AddJsonOptions(options => options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore);
+            services
+                .AddMvc(
+                    options =>
+                        {
+                            options.OutputFormatters.Add(new GitLfsOutputFormatter());
+                            options.InputFormatters.Add(new GitLfsInputFormatter());
+                        })
+                .AddJsonOptions(options => options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore);
 
             // Add application services.
             services.AddTransient<IEmailSender, AuthMessageSender>();

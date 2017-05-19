@@ -25,7 +25,7 @@ namespace GitLfs.Server.Caching.Controllers
     /// <summary>
     /// Controller for handling LFS data.
     /// </summary>
-    [Produces("application/json")]
+    [Produces("application/vnd.git-lfs+json")]
     [Route("api/Lfs")]
     public class LfsController : Controller
     {
@@ -35,22 +35,14 @@ namespace GitLfs.Server.Caching.Controllers
 
         private readonly ILfsClient lfsClient;
 
-        private readonly IRequestSerialiser requestSerialiser;
-
-        private readonly ITransferSerialiser transferSerialiser;
-
         public LfsController(
             ApplicationDbContext context,
             IFileManager fileManager,
-            IRequestSerialiser requestSerialiser,
-            ITransferSerialiser transferSerialiser,
             ILfsClient lfsClient)
         {
             this.context = context;
             this.fileManager = fileManager;
             this.lfsClient = lfsClient;
-            this.requestSerialiser = requestSerialiser;
-            this.transferSerialiser = transferSerialiser;
         }
 
         [HttpGet("/api/{hostId}/{repositoryName}/info/lfs/{objectId}")]
@@ -65,6 +57,13 @@ namespace GitLfs.Server.Caching.Controllers
                     return this.NotFound(new ErrorResponse { Message = "Not a valid host id." });
                 }
 
+                GitLfsFile file = await this.context.LfsFiles.SingleOrDefaultAsync(x => x.ObjectId == objectId);
+
+                if (file == null)
+                {
+                    return this.NotFound(new ErrorResponse() { Message = "Invalid file id." });
+                }
+
                 Stream stream = this.fileManager.GetFileForObjectId(repositoryName, objectId);
 
                 if (stream == null)
@@ -72,7 +71,7 @@ namespace GitLfs.Server.Caching.Controllers
                     stream = await this.lfsClient.DownloadFile(
                                  host,
                                  repositoryName,
-                                 new RequestObject { ObjectId = objectId, Size = 0 });
+                                 new RequestObject { ObjectId = objectId, Size = file.Size });
                 }
 
                 return this.File(stream, "application/octet-stream");
@@ -87,7 +86,7 @@ namespace GitLfs.Server.Caching.Controllers
         public async Task<IActionResult> HandleBatchRequest(
             int hostId,
             string repositoryName,
-            [FromBody] string requestText)
+            [FromBody] Request request)
         {
             GitHost host = await this.context.GitHost.FindAsync(hostId);
 
@@ -96,9 +95,7 @@ namespace GitLfs.Server.Caching.Controllers
                 return this.NotFound(new ErrorResponse { Message = "Not a valid host id." });
             }
 
-            Request request = this.requestSerialiser.FromString(requestText);
-
-            return this.Ok(this.transferSerialiser.ToString(await this.HandleRequest(request, hostId, repositoryName)));
+            return this.Ok(await this.HandleRequest(request, hostId, repositoryName));
         }
 
         [HttpPut("/api/{hostId}/{repositoryName}/info/lfs/{objectId}")]

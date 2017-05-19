@@ -1,0 +1,8 @@
+version: '2'
+
+services:
+  gitlfs.server.caching:
+    image: gitlfs.server.caching
+    build:
+      context: ./GitLfs.Server.Caching
+      dockerfile: Dockerfile

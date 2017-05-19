@@ -59,6 +59,7 @@ namespace GitLfs.Core.BatchResponse
                         }
 
                         action.Mode = actionMode;
+                        batchObjectFile.Actions = new List<BatchObjectAction>();
                         batchObjectFile.Actions.Add(action);
                         action.HRef = (string)actionToken.Value["href"];
                         action.ExpiresAt = (DateTime?)actionToken.Value["expires_at"];

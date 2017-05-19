@@ -22,6 +22,7 @@ namespace GitLfs.Server.Caching
         public static void Main(string[] args)
         {
             IWebHost host = new WebHostBuilder()
+                .UseUrls("http://*:5000")
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()
