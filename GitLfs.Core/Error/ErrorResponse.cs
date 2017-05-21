@@ -30,5 +30,10 @@ namespace GitLfs.Core.Error
         /// </summary>
         [JsonProperty(PropertyName = "request_id")]
         public string RequestId { get; set; }
+
+        public override string ToString()
+        {
+            return string.Format("[ErrorResponse: DocumentationUrl={0}, Message={1}, RequestId={2}]", DocumentationUrl, Message, RequestId);
+        }
     }
 }

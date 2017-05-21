@@ -25,7 +25,7 @@ namespace GitLfs.Server.Caching
                 .UseUrls("http://*:5000")
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseIISIntegration()
+                //.UseIISIntegration()
                 .UseStartup<Startup>()
                 //.UseApplicationInsights()
                 .Build();

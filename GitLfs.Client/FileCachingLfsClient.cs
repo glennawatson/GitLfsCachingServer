@@ -52,23 +52,71 @@ namespace GitLfs.Client
             this.logger = logger;
         }
 
-		/// <inheritdoc />
-		public Task HandleBatchAction(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action)
-        {
-            switch (action.Mode)
-            {
-                case BatchActionMode.Download:
-                    return this.DownloadFile(host, repositoryName, objectId, action);
-                case BatchActionMode.Upload:
-                    return this.UploadFile(host, repositoryName, objectId, action);
-                case BatchActionMode.Verify:
-                    return this.Verify(host, repositoryName, objectId, action);
-                default:
-                    throw new LfsException($"Invalid Batch Action {action}");
-                    
-            }
-        }
+		public async Task Verify(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action)
+		{
+			using (var httpClient = new HttpClient())
+			{
+				SetClientHeaders(action, httpClient);
 
+				using (var content = new StringContent(
+					this.verifySerialiser.ToString(objectId),
+					null,
+					"application/vnd.git-lfs+json"))
+				{
+					logger.LogInformation($"Verify from {action.HRef} with repository name {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}");
+					var result = await httpClient.PostAsync(action.HRef, content);
+
+					if (result.IsSuccessStatusCode == false)
+					{
+						await this.HandleError(result);
+					}
+				}
+			}
+		}
+
+		public async Task<Stream> DownloadFile(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action)
+		{
+			using (var httpClient = new HttpClient())
+			{
+				SetClientHeaders(action, httpClient);
+
+				logger.LogInformation($"Download from {action.HRef} with repository name {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}");
+				var result = await httpClient.GetAsync(action.HRef);
+
+				if (result.IsSuccessStatusCode == false)
+				{
+					await this.HandleError(result);
+				}
+
+				logger.LogInformation($"Now saving to a file {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}\"");
+				var fileName = this.fileManager.SaveFile(repositoryName, objectId, FileLocation.Permenant, await result.Content.ReadAsStreamAsync());
+				logger.LogInformation($"Saved to file {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}\"");
+
+                return new FileStream(fileName, FileMode.Open, FileAccess.Read);
+			}
+		}
+
+		public async Task UploadFile(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action)
+		{
+			using (var httpClient = new HttpClient())
+			{
+				SetClientHeaders(action, httpClient);
+
+				Stream stream = this.fileManager.GetFileStream(repositoryName, objectId, FileLocation.Temporary);
+
+				using (var content = new StreamContent(stream))
+				{
+					content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
+					logger.LogInformation($"Uploading to {action.HRef} with repository name {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}");
+					var result = await httpClient.PutAsync(action.HRef, content);
+
+					if (result.IsSuccessStatusCode == false)
+					{
+						await this.HandleError(result);
+					}
+				}
+			}
+		}
 		/// <inheritdoc />
 		public async Task<BatchTransfer> RequestBatch(GitHost host, string repositoryName, BatchRequest request)
         {
@@ -91,7 +139,8 @@ namespace GitLfs.Client
                         await this.HandleError(result);
                     }
 
-                    BatchTransfer transfer = this.transferSerialiser.TransferFromString(await result.Content.ReadAsStringAsync());
+                    string returnContents = await result.Content.ReadAsStringAsync();
+                    BatchTransfer transfer = this.transferSerialiser.TransferFromString(returnContents);
 
                     return transfer;
                 }
@@ -104,9 +153,11 @@ namespace GitLfs.Client
 			{
 				foreach (BatchHeader header in action.Headers)
 				{
-					downloadHttpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
+                    downloadHttpClient.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
 				}
 			}
+
+            downloadHttpClient.DefaultRequestHeaders.Add("User-Agent", "glennawatson");
 		}
 
 		private static Uri GetLfsBatchUrl(GitHost host, string repositoryName)
@@ -115,69 +166,7 @@ namespace GitLfs.Client
 			return url;
 		}
 
-        private async Task Verify(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action)
-        {
-            using (var httpClient = new HttpClient())
-            {
-                SetClientHeaders(action, httpClient);
-
-                using (var content = new StringContent(
-                    this.verifySerialiser.ToString(objectId),
-                    null,
-                    "application/vnd.git-lfs+json"))
-                {
-					logger.LogInformation($"Verify from {action.HRef} with repository name {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}");
-					var result = await httpClient.PostAsync(action.HRef, content);
-
-					if (result.IsSuccessStatusCode == false)
-					{
-						await this.HandleError(result);
-					}
-                }
-            }
-        }
-
-		private async Task DownloadFile(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action)
-        {
-            using (var httpClient = new HttpClient())
-            {
-                SetClientHeaders(action, httpClient);
-
-				logger.LogInformation($"Download from {action.HRef} with repository name {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}");
-                var result = await httpClient.GetAsync(action.HRef, HttpCompletionOption.ResponseHeadersRead);
-
-				if (result.IsSuccessStatusCode == false)
-				{
-					await this.HandleError(result);
-				}
-
-                await this.fileManager.SaveFile(repositoryName, objectId, FileLocation.Permenant, await result.Content.ReadAsStreamAsync());
-            }
-        }
-
-        private async Task UploadFile(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action)
-        {
-            using (var httpClient = new HttpClient())
-            {
-                SetClientHeaders(action, httpClient);
-
-                Stream stream = this.fileManager.GetFile(repositoryName, objectId, FileLocation.Temporary);
-
-                using (var content = new StreamContent(stream))
-                {
-                    content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
-                    logger.LogInformation($"Uploading to {action.HRef} with repository name {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}");
-                    var result = await httpClient.PutAsync(action.HRef, content);
-
-                    if (result.IsSuccessStatusCode == false)
-                    {
-						await this.HandleError(result);
-					}
-                }
-            }
-        }
-
-		private async Task HandleError(HttpResponseMessage result)
+ 		private async Task HandleError(HttpResponseMessage result)
 		{
 			ErrorResponse errorResponse;
 			try
@@ -188,6 +177,8 @@ namespace GitLfs.Client
 			{
 				errorResponse = new ErrorResponse() { Message = result.ReasonPhrase };
 			}
+
+            logger.LogWarning($"Operation failed. {errorResponse.ToString()}");
 
 			throw new ErrorResponseException(errorResponse, (int)result.StatusCode);
 		}

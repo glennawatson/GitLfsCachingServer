@@ -17,15 +17,11 @@ namespace GitLfs.Client
     /// </summary>
     public interface ILfsClient
     {
-        /// <summary>
-        /// Uploads the selected file to the remote server.
-        /// </summary>
-        /// <param name="host">The host details where to upload the file.</param>
-        /// <param name="repositoryName">The repository name.</param>
-        /// <param name="objectId">The object that is referenced with the action.</param>
-        /// <param name="action">The action to perform.</param>
-        /// <returns>A task to monitor the progress.</returns>
-        Task HandleBatchAction(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action);
+        Task Verify(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action);
+
+        Task<System.IO.Stream> DownloadFile(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action);
+
+        Task UploadFile(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action);
 
 		/// <summary>
 		/// Requests a batch transfer from the server.

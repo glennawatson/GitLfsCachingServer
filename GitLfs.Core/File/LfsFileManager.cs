@@ -35,7 +35,7 @@ namespace GitLfs.Core.File
         }
 
 		/// <inheritdoc />
-		public Stream GetFile(string repositoryName, ObjectId objectId, FileLocation location)
+		public Stream GetFileStream(string repositoryName, ObjectId objectId, FileLocation location)
 		{
             if (this.IsFileStored(repositoryName, objectId, location) == false)
             {
@@ -47,7 +47,19 @@ namespace GitLfs.Core.File
 		}
 
 		/// <inheritdoc />
-		public async Task<string> SaveFile(string repositoryName, ObjectId objectId, FileLocation location, Stream contents)
+		public string GetFilePath(string repositoryName, ObjectId objectId, FileLocation location)
+        {
+            if (this.IsFileStored(repositoryName, objectId, location) == false)
+            {
+                return null;
+            }
+
+            var path = this.GetDirectoriesAndFileNames(repositoryName, objectId, location).Item2;
+            return path;
+        }
+
+		/// <inheritdoc />
+		public string SaveFile(string repositoryName, ObjectId objectId, FileLocation location, Stream contents)
 		{
 			var temporaryPath = this.GetDirectoriesAndFileNames(repositoryName, objectId, location);
 
@@ -55,14 +67,14 @@ namespace GitLfs.Core.File
 
 			using (var fileStream = new FileStream(temporaryPath.Item2, FileMode.Create, FileAccess.Write))
 			{
-				await contents.CopyToAsync(fileStream);
+				contents.CopyTo(fileStream);
 
 				return temporaryPath.Item2;
 			}
 		}
 
 		/// <inheritdoc />
-		public async Task<string> SaveFile(string repositoryName, ObjectId objectId, FileLocation location, string contents)
+		public async Task<string> SaveFileAsync(string repositoryName, ObjectId objectId, FileLocation location, string contents)
 		{
 			var temporaryPath = this.GetDirectoriesAndFileNames(repositoryName, objectId, location);
 
@@ -79,31 +91,46 @@ namespace GitLfs.Core.File
         /// <inheritdoc />
         public void DeleteFile(string repositoryName, ObjectId objectId, FileLocation location)
         {
-			var permenantPath = this.GetDirectoriesAndFileNames(repositoryName, objectId, location);
+			var path = this.GetDirectoriesAndFileNames(repositoryName, objectId, location);
 
-            File.Delete(permenantPath.Item2);
+            if (File.Exists(path.Item2) == false)
+            {
+                return;
+            }
+
+            File.Delete(path.Item2);
+
+            var currentDirectory = Path.GetDirectoryName(path.Item2);
+
+			for (int i = 0; i < 2; ++i)
+            {
+                if (Directory.GetFileSystemEntries(currentDirectory).Length == 0)
+				{
+                    Directory.Delete(currentDirectory);
+				}
+                else
+                {
+                    break;
+                }
+
+                currentDirectory = Path.GetDirectoryName(currentDirectory);
+			}
 		}
 
 		/// <inheritdoc />
-		public async Task MoveFile(string repositoryName, ObjectId objectId, FileLocation from, FileLocation to)
+		public void MoveFile(string repositoryName, ObjectId objectId, FileLocation from, FileLocation to)
 		{
 			var temporaryPath = this.GetDirectoriesAndFileNames(repositoryName, objectId, from);
 			var permenantPath = this.GetDirectoriesAndFileNames(repositoryName, objectId, to);
 
-            Directory.CreateDirectory(permenantPath.Item2);
+            Directory.CreateDirectory(permenantPath.Item1);
 
             if (File.Exists(permenantPath.Item2))
             {
                 return;
             }
 
-            using (FileStream sourceStream = File.Open(temporaryPath.Item2, FileMode.Open))
-			{
-                using (FileStream destinationStream = File.Create(permenantPath.Item2))
-				{
-					await sourceStream.CopyToAsync(destinationStream);
-				}
-			}
+            File.Move(temporaryPath.Item2, permenantPath.Item2);
 
             File.Delete(temporaryPath.Item2);
 		}

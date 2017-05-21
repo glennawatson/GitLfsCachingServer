@@ -23,6 +23,8 @@ namespace GitLfs.Server.Caching.Controllers
 
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.EntityFrameworkCore;
+    using Microsoft.AspNetCore.WebUtilities;
+    using Microsoft.AspNetCore.Http;
 
     /// <summary>
     /// Controller for handling LFS data.
@@ -60,9 +62,11 @@ namespace GitLfs.Server.Caching.Controllers
 
                 var fileObjectId = new ObjectId(objectId, size);
 
-                if (this.fileManager.IsFileStored(repositoryName, fileObjectId, FileLocation.Metadata))
+                Stream stream = this.fileManager.GetFileStream(repositoryName, fileObjectId, FileLocation.Permenant);
+
+                if (stream == null && this.fileManager.IsFileStored(repositoryName, fileObjectId, FileLocation.Metadata))
                 {
-                    using (var streamer = new StreamReader(this.fileManager.GetFile(repositoryName, fileObjectId, FileLocation.Metadata)))
+                    using (var streamer = new StreamReader(this.fileManager.GetFileStream(repositoryName, fileObjectId, FileLocation.Metadata)))
                     {
                         var objectDetails = this.transferSerialiser.ObjectFromString(await streamer.ReadToEndAsync());
 						
@@ -74,14 +78,12 @@ namespace GitLfs.Server.Caching.Controllers
 								return this.StatusCode(422, new ErrorResponse { Message = "No download action associated with request" });
 							}
 
-							await this.lfsClient.HandleBatchAction(host, repositoryName, fileObjectId, objectDetails.Actions[0]);
+                            stream = await this.lfsClient.DownloadFile(host, repositoryName, fileObjectId, objectDetails.Actions[0]);
+							this.fileManager.DeleteFile(repositoryName, fileObjectId, FileLocation.Metadata);
 						}
 					}
                 }
 
-                Stream stream = this.fileManager.GetFile(repositoryName, fileObjectId, FileLocation.Permenant);
-              
-                this.fileManager.DeleteFile(repositoryName, fileObjectId, FileLocation.Metadata);
 
                 return this.File(stream, "application/octet-stream");
             }
@@ -100,7 +102,7 @@ namespace GitLfs.Server.Caching.Controllers
         {
             try
             {
-                GitHost host = await this.context.GitHost.FindAsync(hostId);
+				GitHost host = await this.context.GitHost.FindAsync(hostId);
 
                 if (host == null)
                 {
@@ -111,31 +113,28 @@ namespace GitLfs.Server.Caching.Controllers
 
                 BatchObject objectDetails = null;
 
-                if (this.fileManager.IsFileStored(repositoryName, fileObjectId, FileLocation.Metadata))
+				this.fileManager.SaveFile(repositoryName, fileObjectId, FileLocation.Temporary, Request.Body);
+
+				if (this.fileManager.IsFileStored(repositoryName, fileObjectId, FileLocation.Metadata))
                 {
-                    using (var streamer = new StreamReader(this.fileManager.GetFile(repositoryName, fileObjectId, FileLocation.Metadata)))
+                    using (var streamer = new StreamReader(this.fileManager.GetFileStream(repositoryName, fileObjectId, FileLocation.Metadata)))
                     {
                         objectDetails = this.transferSerialiser.ObjectFromString(await streamer.ReadToEndAsync());
                     }
+
+                    if (objectDetails.Actions != null && objectDetails.Actions.Count > 0)
+                    {
+                        if (objectDetails.Actions[0].Mode != BatchActionMode.Upload)
+                        {
+                            return this.StatusCode(422, new ErrorResponse { Message =$"Invalid mode {objectDetails.Actions[0].Mode}, expecting Upload" });
+                        }
+
+						await this.lfsClient.UploadFile(host, repositoryName, fileObjectId, objectDetails.Actions[0]);
+					}
                 }
 
-                if (objectDetails == null ||
-                    objectDetails.Actions.Count == 0 ||
-                    objectDetails.Actions.Count > 2 ||
-                    objectDetails.Actions[0].Mode != BatchActionMode.Upload)
-                {
-                    return this.StatusCode(422, new ErrorResponse { Message = "No upload action associated with request" });
-                }
-
-
-                Stream body = this.HttpContext.Request.Body;
-
-                await this.fileManager.SaveFile(repositoryName, fileObjectId, FileLocation.Temporary, body);
-
-                await this.lfsClient.HandleBatchAction(host, repositoryName, fileObjectId, objectDetails.Actions[0]);
-
-                return this.Ok();
-            }
+				return this.Ok();
+			}
             catch (ErrorResponseException ex)
             {
                 return StatusCode(ex.StatusCode.Value, ex.ErrorResponse);
@@ -162,27 +161,27 @@ namespace GitLfs.Server.Caching.Controllers
 
 				BatchObject objectDetails = null;
 
-				if (this.fileManager.IsFileStored(repositoryName, fileObjectId, FileLocation.Metadata))
+				this.fileManager.MoveFile(repositoryName, fileObjectId, FileLocation.Temporary, FileLocation.Permenant);
+
+                if (this.fileManager.IsFileStored(repositoryName, fileObjectId, FileLocation.Metadata))
 				{
-					using (var streamer = new StreamReader(this.fileManager.GetFile(repositoryName, fileObjectId, FileLocation.Metadata)))
+					using (var streamer = new StreamReader(this.fileManager.GetFileStream(repositoryName, fileObjectId, FileLocation.Metadata)))
 					{
 						objectDetails = this.transferSerialiser.ObjectFromString(await streamer.ReadToEndAsync());
 					}
-				}
-  
-                if (objectDetails == null ||
-                    objectDetails.Actions.Count != 2 ||
-                    objectDetails.Actions[0].Mode != BatchActionMode.Upload ||
-                    objectDetails.Actions[1].Mode != BatchActionMode.Verify)
-                {
-                    return this.StatusCode(422, new ErrorResponse { Message = "Invalid Batch Request" });
-                }
 
-				await this.lfsClient.HandleBatchAction(host, repositoryName, fileObjectId, objectDetails.Actions[0]);
+					if (objectDetails != null &&
+						objectDetails.Actions.Count == 2 &&
+						objectDetails.Actions[0].Mode == BatchActionMode.Upload &&
+						objectDetails.Actions[1].Mode == BatchActionMode.Verify)
+					{
+						await this.lfsClient.Verify(host, repositoryName, fileObjectId, objectDetails.Actions[1]);
+					}
+   				}
 
-                await this.fileManager.MoveFile(repositoryName, objectDetails.Id, FileLocation.Temporary, FileLocation.Permenant);
+				this.fileManager.DeleteFile(repositoryName, fileObjectId, FileLocation.Metadata);
 
-                return this.Ok();
+				return this.Ok();
             }
             catch (ErrorResponseException ex)
             {
@@ -224,12 +223,14 @@ namespace GitLfs.Server.Caching.Controllers
 
             try
             {
+                IDictionary<ObjectId, IBatchObject> batchObjects = new Dictionary<ObjectId, IBatchObject>();
                 if (serverBatchRequest.Objects.Count > 0)
                 {
                     var serverResults = await this.lfsClient.RequestBatch(host, repositoryName, serverBatchRequest);
-                    foreach (var serverResult in serverResults.Objects.OfType<BatchObject>())
+                    foreach (var serverResult in serverResults.Objects)
                     {
-                        await this.fileManager.SaveFile(repositoryName, serverResult.Id, FileLocation.Metadata, this.transferSerialiser.ToString(serverResult as BatchObject));
+                        batchObjects.Add(serverResult.Id, serverResult);
+                        await this.fileManager.SaveFileAsync(repositoryName, serverResult.Id, FileLocation.Metadata, this.transferSerialiser.ToString(serverResult as BatchObject));
                     }
                 }
 
@@ -237,10 +238,20 @@ namespace GitLfs.Server.Caching.Controllers
                 returnResult.Mode = TransferMode.Basic;
                 returnResult.Objects = new List<IBatchObject>();
 
-                foreach (var pendingRequest in request.Objects)
+                foreach (var pendingObjectId in request.Objects)
                 {
-                    BatchObjectError errorResult = null; //serverResults.Objects.SingleOrDefault(x => x.Id == pendingRequest.ObjectId) as BatchObjectError;
+                    batchObjects.TryGetValue(pendingObjectId, out IBatchObject batchObjectBase);
+                    BatchObjectError errorResult = batchObjectBase as BatchObjectError;
+                    BatchObject batchObject = batchObjectBase as BatchObject;
 
+                    BatchObject returnBatchObject = new BatchObject()
+                    {
+                        Id = pendingObjectId,
+                        Actions = new List<BatchObjectAction>()
+                    };
+
+                    returnResult.Objects.Add(returnBatchObject);
+						
                     if (errorResult != null)
                     {
                         returnResult.Objects.Add(errorResult);
@@ -249,23 +260,29 @@ namespace GitLfs.Server.Caching.Controllers
                     {
                         var action = new BatchObjectAction();
                         action.Mode = BatchActionMode.Download;
-                        action.HRef = $"{this.Request.Scheme}://{this.Request.Host}/api/{hostId}/{repositoryName}/info/lfs/{pendingRequest.Hash}/{pendingRequest.Size}";
+                        action.HRef = $"{this.Request.Scheme}://{this.Request.Host}/api/{hostId}/{repositoryName}/info/lfs/{pendingObjectId.Hash}/{pendingObjectId.Size}";
 
-                        returnResult.Objects.Add(new BatchObject() { Id = pendingRequest, Actions = new List<BatchObjectAction> { action } });
+                        returnBatchObject.Actions.Add(action);
                     }
                     else if (request.Operation == BatchRequestMode.Upload)
                     {
-                        var uploadLocation = new Uri($"{this.Request.Scheme}://{this.Request.Host}/api/{hostId}/{repositoryName}/info/lfs/{pendingRequest.Hash}/{pendingRequest.Size}");
+                        if (batchObject.Actions.Count == 0 && this.fileManager.IsFileStored(repositoryName, pendingObjectId, FileLocation.Permenant))
+                        {
+                            continue;
+                        }
+
+                        var uploadLocation = new Uri($"{this.Request.Scheme}://{this.Request.Host}/api/{hostId}/{repositoryName}/info/lfs/{pendingObjectId.Hash}/{pendingObjectId.Size}");
 
                         var uploadAction = new BatchObjectAction();
                         uploadAction.Mode = BatchActionMode.Upload;
-                        uploadAction.HRef = $"{this.Request.Scheme}://{this.Request.Host}/api/{hostId}/{repositoryName}/info/lfs/{pendingRequest.Hash}/{pendingRequest.Size}";
+                        uploadAction.HRef = $"{this.Request.Scheme}://{this.Request.Host}/api/{hostId}/{repositoryName}/info/lfs/{pendingObjectId.Hash}/{pendingObjectId.Size}";
 
                         var verifyAction = new BatchObjectAction();
                         verifyAction.Mode = BatchActionMode.Verify;
-                        verifyAction.HRef = $"{this.Request.Scheme}://{this.Request.Host}/api/{hostId}/{repositoryName}/info/lfs/verify/{pendingRequest.Hash}/{pendingRequest.Size}";
+                        verifyAction.HRef = $"{this.Request.Scheme}://{this.Request.Host}/api/{hostId}/{repositoryName}/info/lfs/verify/{pendingObjectId.Hash}/{pendingObjectId.Size}";
 
-                        returnResult.Objects.Add(new BatchObject() { Id = pendingRequest, Actions = new List<BatchObjectAction> { uploadAction, verifyAction } });
+						returnBatchObject.Actions.Add(uploadAction);
+						returnBatchObject.Actions.Add(verifyAction);
                     }
                 }
 

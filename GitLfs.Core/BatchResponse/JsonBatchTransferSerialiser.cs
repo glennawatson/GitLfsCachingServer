@@ -93,36 +93,40 @@ namespace GitLfs.Core.BatchResponse
 
 			JToken actionsToken = item["actions"];
 
-			foreach (JProperty actionToken in actionsToken.Cast<JProperty>())
-			{
-				var action = new BatchObjectAction();
-				if (Enum.TryParse(actionToken.Name, true, out BatchActionMode actionMode) == false)
-				{
-					throw new ParseException("Invalid action mode.");
-				}
+			batchObjectFile.Actions = new List<BatchObjectAction>();
 
-				action.Mode = actionMode;
-				batchObjectFile.Actions = new List<BatchObjectAction>();
-				batchObjectFile.Actions.Add(action);
-				action.HRef = (string)actionToken.Value["href"];
-				action.ExpiresAt = (DateTime?)actionToken.Value["expires_at"];
-				action.ExpiresIn = (int?)actionToken.Value["expires_in"];
-				var headerToken = actionToken.Value["header"] as JObject;
+            if (actionsToken != null)
+            {
+                foreach (JProperty actionToken in actionsToken.Cast<JProperty>())
+                {
+                    var action = new BatchObjectAction();
+                    if (Enum.TryParse(actionToken.Name, true, out BatchActionMode actionMode) == false)
+                    {
+                        throw new ParseException("Invalid action mode.");
+                    }
 
-				if (headerToken != null)
-				{
-					List<BatchHeader> headers = new List<BatchHeader>();
+                    action.Mode = actionMode;
+                    batchObjectFile.Actions.Add(action);
+                    action.HRef = (string)actionToken.Value["href"];
+                    action.ExpiresAt = (DateTime?)actionToken.Value["expires_at"];
+                    action.ExpiresIn = (int?)actionToken.Value["expires_in"];
+                    var headerToken = actionToken.Value["header"] as JObject;
 
-					foreach (JProperty headerPair in headerToken.Cast<JProperty>())
-					{
-						string key = headerPair.Name;
-						var value = (string)headerPair.Value;
-						headers.Add(new BatchHeader(key, value));
-					}
+                    if (headerToken != null)
+                    {
+                        List<BatchHeader> headers = new List<BatchHeader>();
 
-					action.Headers = headers;
-				}
-			}
+                        foreach (JProperty headerPair in headerToken.Cast<JProperty>())
+                        {
+                            string key = headerPair.Name;
+                            var value = (string)headerPair.Value;
+                            headers.Add(new BatchHeader(key, value));
+                        }
+
+                        action.Headers = headers;
+                    }
+                }
+            }
 
             return batchObjectFile;
 		}
