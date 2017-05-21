@@ -50,20 +50,6 @@ namespace GitLfs.Server.Caching.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "LfsFiles",
-                columns: table => new
-                {
-                    Id = table.Column<int>(nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    ObjectId = table.Column<string>(nullable: true),
-                    Size = table.Column<long>(nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_LfsFiles", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "AspNetRoles",
                 columns: table => new
                 {
@@ -195,12 +181,6 @@ namespace GitLfs.Server.Caching.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_LfsFiles_ObjectId",
-                table: "LfsFiles",
-                column: "ObjectId",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "RoleNameIndex",
                 table: "AspNetRoles",
                 column: "NormalizedName",
@@ -231,9 +211,6 @@ namespace GitLfs.Server.Caching.Migrations
         {
             migrationBuilder.DropTable(
                 name: "GitHost");
-
-            migrationBuilder.DropTable(
-                name: "LfsFiles");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");

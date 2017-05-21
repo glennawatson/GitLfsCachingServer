@@ -17,13 +17,27 @@ namespace GitLfs.Core.Error
         /// <inheritdoc />
         public ErrorResponse FromString(string value)
         {
-            return JsonConvert.DeserializeObject<ErrorResponse>(value, CreateSettings());
+            try
+            {
+                return JsonConvert.DeserializeObject<ErrorResponse>(value, CreateSettings());
+            }
+            catch (JsonException ex)
+            {
+                throw new ParseException(ex.Message, ex);
+            }
         }
 
         /// <inheritdoc />
         public string ToString(ErrorResponse value)
         {
-            return JsonConvert.SerializeObject(value, CreateSettings());
+            try
+            {
+                return JsonConvert.SerializeObject(value, CreateSettings());
+            }
+            catch (JsonException ex)
+            {
+                throw new ParseException(ex.Message, ex);
+            }
         }
 
         private static JsonSerializerSettings CreateSettings()

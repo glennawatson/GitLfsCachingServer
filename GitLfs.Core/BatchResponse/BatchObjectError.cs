@@ -1,8 +1,11 @@
 ﻿namespace GitLfs.Core.BatchResponse
 {
-    public class BatchObjectError : BatchObjectBase
+    public class BatchObjectError : IBatchObject
     {
-        public int ErrorCode { get; set; }
+		/// <inheritdoc />
+		public ObjectId Id { get; set; }
+
+		public int ErrorCode { get; set; }
 
         public string ErrorMessage { get; set; }
     }

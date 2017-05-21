@@ -21,6 +21,6 @@ namespace GitLfs.Core.BatchResponse
         /// <summary>
         /// Gets the objects of the transfer.
         /// </summary>
-        public IList<BatchObjectBase> Objects { get; set; }
+        public IList<IBatchObject> Objects { get; set; }
     }
 }

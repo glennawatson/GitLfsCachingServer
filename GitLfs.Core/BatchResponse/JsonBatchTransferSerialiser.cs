@@ -19,9 +19,9 @@ namespace GitLfs.Core.BatchResponse
     public class JsonBatchTransferSerialiser : IBatchTransferSerialiser
     {
         /// <inheritdoc />
-        public BatchTransfer FromString(string json)
+        public BatchTransfer TransferFromString(string json)
         {
-            var transfer = new BatchTransfer { Objects = new List<BatchObjectBase>() };
+            var transfer = new BatchTransfer { Objects = new List<IBatchObject>() };
 
             JObject jsonObject = JObject.Parse(json);
 
@@ -32,7 +32,7 @@ namespace GitLfs.Core.BatchResponse
 
             foreach (JToken item in jsonObject["objects"])
             {
-                BatchObjectBase batchObject = new BatchObject();
+                IBatchObject batchObject = new BatchObject();
                 if (item["error"] != null)
                 {
                     var batchObjectError =
@@ -45,52 +45,22 @@ namespace GitLfs.Core.BatchResponse
                 }
                 else
                 {
-                    var batchObjectFile = new BatchObject();
-                    batchObjectFile.Authenticated = (bool?)item["authenticated"];
 
-                    JToken actionsToken = item["actions"];
-
-                    foreach (JProperty actionToken in actionsToken.Cast<JProperty>())
-                    {
-                        var action = new BatchObjectAction();
-                        if (Enum.TryParse(actionToken.Name, true, out BatchActionMode actionMode) == false)
-                        {
-                            throw new BatchTransferParseException("Invalid action mode.");
-                        }
-
-                        action.Mode = actionMode;
-                        batchObjectFile.Actions = new List<BatchObjectAction>();
-                        batchObjectFile.Actions.Add(action);
-                        action.HRef = (string)actionToken.Value["href"];
-                        action.ExpiresAt = (DateTime?)actionToken.Value["expires_at"];
-                        action.ExpiresIn = (int?)actionToken.Value["expires_in"];
-                        var headerToken = actionToken.Value["header"] as JObject;
-
-                        if (headerToken != null)
-                        {
-                            IList<KeyValuePair<string, string>> headers = new List<KeyValuePair<string, string>>();
-
-                            foreach (JProperty headerPair in headerToken.Cast<JProperty>())
-                            {
-                                string key = headerPair.Name;
-                                var value = (string)headerPair.Value;
-                                headers.Add(new KeyValuePair<string, string>(key, value));
-                            }
-
-                            action.Headers = headers;
-                        }
-                    }
-
-                    batchObject = batchObjectFile;
+                    batchObject = this.ProcessBatchObjectJson(item);
                 }
 
-                batchObject.ObjectId = (string)item["oid"];
-                batchObject.Size = (long)item["size"];
+                batchObject.Id = new ObjectId((string)item["oid"], (long)item["size"]);
 
                 transfer.Objects.Add(batchObject);
             }
 
             return transfer;
+        }
+
+		/// <inheritdoc />
+		public BatchObject ObjectFromString(string json)
+        {
+            return this.ProcessBatchObjectJson(JObject.Parse(json));
         }
 
         /// <inheritdoc />
@@ -104,52 +74,104 @@ namespace GitLfs.Core.BatchResponse
 
             foreach (BatchObject objectValue in transfer.Objects)
             {
-                var objectToken = new JObject { ["oid"] = objectValue.ObjectId, ["size"] = objectValue.Size };
-
-                if (objectValue.Authenticated != null)
-                {
-                    objectToken["authenticated"] = objectValue.Authenticated;
-                }
-
-                objectItemsToken.Add(objectToken);
-
-                var actionsArray = new JObject();
-
-                objectToken["actions"] = actionsArray;
-
-                foreach (BatchObjectAction action in objectValue.Actions)
-                {
-                    var actionContents = new JObject { new JProperty("href", action.HRef) };
-
-                    if (action.Headers != null)
-                    {
-                        var headers = new JObject();
-                        foreach (KeyValuePair<string, string> header in action.Headers)
-                        {
-                            var property = new JProperty(header.Key, header.Value);
-                            headers.Add(property);
-                        }
-
-                        actionContents["header"] = headers;
-                    }
-
-                    if (action.ExpiresIn != null)
-                    {
-                        actionContents.Add(new JProperty("expires_in", action.ExpiresIn));
-                    }
-
-                    if (action.ExpiresAt != null)
-                    {
-                        actionContents.Add(new JProperty("expires_at", action.ExpiresAt.Value.ToUniversalTime()));
-                    }
-
-                    var actionToken = new JProperty(action.Mode.ToString().ToLowerInvariant(), actionContents);
-
-                    actionsArray.Add(actionToken);
-                }
-            }
+                objectItemsToken.Add(ProcessBatchObject(objectValue));
+			}
 
             return jsonTransfer.ToString(Formatting.Indented);
+        }
+
+		/// <inheritdoc />
+		public string ToString(BatchObject batchObject)
+        {
+            return ProcessBatchObject(batchObject).ToString();
+        }
+
+        private BatchObject ProcessBatchObjectJson(JToken item)
+        {
+			var batchObjectFile = new BatchObject();
+			batchObjectFile.Authenticated = (bool?)item["authenticated"];
+
+			JToken actionsToken = item["actions"];
+
+			foreach (JProperty actionToken in actionsToken.Cast<JProperty>())
+			{
+				var action = new BatchObjectAction();
+				if (Enum.TryParse(actionToken.Name, true, out BatchActionMode actionMode) == false)
+				{
+					throw new ParseException("Invalid action mode.");
+				}
+
+				action.Mode = actionMode;
+				batchObjectFile.Actions = new List<BatchObjectAction>();
+				batchObjectFile.Actions.Add(action);
+				action.HRef = (string)actionToken.Value["href"];
+				action.ExpiresAt = (DateTime?)actionToken.Value["expires_at"];
+				action.ExpiresIn = (int?)actionToken.Value["expires_in"];
+				var headerToken = actionToken.Value["header"] as JObject;
+
+				if (headerToken != null)
+				{
+					List<BatchHeader> headers = new List<BatchHeader>();
+
+					foreach (JProperty headerPair in headerToken.Cast<JProperty>())
+					{
+						string key = headerPair.Name;
+						var value = (string)headerPair.Value;
+						headers.Add(new BatchHeader(key, value));
+					}
+
+					action.Headers = headers;
+				}
+			}
+
+            return batchObjectFile;
+		}
+
+        private JObject ProcessBatchObject(BatchObject objectValue)
+        {
+			var objectToken = new JObject { ["oid"] = objectValue.Id.Hash, ["size"] = objectValue.Id.Size };
+
+			if (objectValue.Authenticated != null)
+			{
+				objectToken["authenticated"] = objectValue.Authenticated;
+			}
+
+			var actionsArray = new JObject();
+
+			objectToken["actions"] = actionsArray;
+
+			foreach (BatchObjectAction action in objectValue.Actions)
+			{
+				var actionContents = new JObject { new JProperty("href", action.HRef) };
+
+				if (action.Headers != null)
+				{
+					var headers = new JObject();
+					foreach (BatchHeader header in action.Headers)
+					{
+						var property = new JProperty(header.Key, header.Value);
+						headers.Add(property);
+					}
+
+					actionContents["header"] = headers;
+				}
+
+				if (action.ExpiresIn != null)
+				{
+					actionContents.Add(new JProperty("expires_in", action.ExpiresIn));
+				}
+
+				if (action.ExpiresAt != null)
+				{
+					actionContents.Add(new JProperty("expires_at", action.ExpiresAt.Value.ToUniversalTime()));
+				}
+
+				var actionToken = new JProperty(action.Mode.ToString().ToLowerInvariant(), actionContents);
+
+				actionsArray.Add(actionToken);
+			}
+
+            return objectToken;
         }
     }
 }

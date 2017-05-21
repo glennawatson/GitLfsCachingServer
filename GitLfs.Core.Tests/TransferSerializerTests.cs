@@ -24,7 +24,7 @@ namespace GitLfs.Core.Tests
             JObject jsonObject = JObject.Parse(testData);
 
             var serialiser = new JsonBatchTransferSerialiser();
-            BatchTransfer transfer = serialiser.FromString(testData);
+            BatchTransfer transfer = serialiser.TransferFromString(testData);
 
             string jsonText = serialiser.ToString(transfer);
 
@@ -40,7 +40,7 @@ namespace GitLfs.Core.Tests
                 "{  \"transfer\": \"basic\",  \"objects\": [    {      \"oid\": \"1111111\",      \"size\": 123,      \"authenticated\": true,      \"actions\": {        \"download\": {          \"href\": \"https://some-download.com\",          \"header\": {            \"Key\": \"value\"          },          \"expires_at\": \"2016-11-10T15:29:07Z\",        }      }    }  ]}";
 
             var serialiser = new JsonBatchTransferSerialiser();
-            BatchTransfer transfer = serialiser.FromString(testData);
+            BatchTransfer transfer = serialiser.TransferFromString(testData);
 
             Assert.Equal(transfer.Mode, TransferMode.Basic);
 

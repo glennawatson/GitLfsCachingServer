@@ -29,7 +29,7 @@ namespace GitLfs.Core.Tests
             Assert.Equal(request.Transfers.Count, 1);
             Assert.Equal(request.Operation, BatchRequestMode.Download);
 
-            Assert.Equal(request.Objects[0].ObjectId, "12345678");
+            Assert.Equal(request.Objects[0].Hash, "12345678");
             Assert.Equal(request.Objects[0].Size, 123);
 
             Assert.Equal(request.Transfers[0], TransferMode.Basic);

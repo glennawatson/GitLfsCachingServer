@@ -8,7 +8,7 @@ using GitLfs.Server.Caching.Data;
 namespace GitLfs.Server.Caching.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20170516023756_initial")]
+    [Migration("20170521112844_initial")]
     partial class initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -89,23 +89,6 @@ namespace GitLfs.Server.Caching.Migrations
                         .HasName("UserNameIndex");
 
                     b.ToTable("AspNetUsers");
-                });
-
-            modelBuilder.Entity("GitLfs.Server.Caching.Models.GitLfsFile", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd();
-
-                    b.Property<string>("ObjectId");
-
-                    b.Property<long>("Size");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ObjectId")
-                        .IsUnique();
-
-                    b.ToTable("LfsFiles");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.EntityFrameworkCore.IdentityRole", b =>

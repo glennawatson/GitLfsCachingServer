@@ -18,13 +18,27 @@ namespace GitLfs.Core.BatchRequest
         /// <inheritdoc />
         public BatchRequest FromString(string value)
         {
-            return JsonConvert.DeserializeObject<BatchRequest>(value, CreateSettings());
+            try
+            {
+                return JsonConvert.DeserializeObject<BatchRequest>(value, CreateSettings());
+            }
+            catch (JsonException ex)
+            {
+                throw new ParseException(ex.Message, ex);
+            }
         }
 
         /// <inheritdoc />
         public string ToString(BatchRequest value)
         {
-            return JsonConvert.SerializeObject(value, CreateSettings());
+            try 
+            {
+                return JsonConvert.SerializeObject(value, CreateSettings());
+		    }
+            catch (JsonException ex)
+            {
+                throw new ParseException(ex.Message, ex);
+            }
         }
 
         private static JsonSerializerSettings CreateSettings()

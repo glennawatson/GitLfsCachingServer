@@ -11,7 +11,7 @@ namespace GitLfs.Server.Caching.Formatters
     using System.Reflection;
     using System.Text;
     using System.Threading.Tasks;
-
+    using GitLfs.Core;
     using GitLfs.Core.BatchRequest;
     using GitLfs.Core.BatchResponse;
     using GitLfs.Core.Error;
@@ -21,10 +21,14 @@ namespace GitLfs.Server.Caching.Formatters
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Net.Http.Headers;
 
-    using Newtonsoft.Json;
-
+    /// <summary>
+    /// A input formatter which handles the required files from GIT LFS. 
+    /// </summary>
     public class GitLfsInputFormatter : TextInputFormatter
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:GitLfs.Server.Caching.Formatters.GitLfsInputFormatter"/> class.
+        /// </summary>
         public GitLfsInputFormatter()
         {
             this.SupportedMediaTypes.Add(MediaTypeHeaderValue.Parse("application/vnd.git-lfs+json"));
@@ -36,16 +40,16 @@ namespace GitLfs.Server.Caching.Formatters
         /// <inheritdoc />
         public override async Task<InputFormatterResult> ReadRequestBodyAsync(
             InputFormatterContext context,
-            Encoding effectiveEncoding)
+            Encoding encoding)
         {
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (effectiveEncoding == null)
+            if (encoding == null)
             {
-                throw new ArgumentNullException(nameof(effectiveEncoding));
+                throw new ArgumentNullException(nameof(encoding));
             }
 
             IServiceProvider serviceProvider = context.HttpContext.RequestServices;
@@ -56,7 +60,7 @@ namespace GitLfs.Server.Caching.Formatters
 
             HttpRequest request = context.HttpContext.Request;
 
-            using (var reader = new StreamReader(request.Body, effectiveEncoding))
+            using (var reader = new StreamReader(request.Body, encoding))
             {
                 string contents = await reader.ReadToEndAsync();
                 try
@@ -64,7 +68,7 @@ namespace GitLfs.Server.Caching.Formatters
                     BatchRequest lfsRequest = requestSerialiser.FromString(contents);
                     return await InputFormatterResult.SuccessAsync(lfsRequest);
                 }
-                catch (JsonException)
+                catch (ParseException)
                 {
                     try
                     {
@@ -75,10 +79,10 @@ namespace GitLfs.Server.Caching.Formatters
                     {
                         try
                         {
-                            BatchTransfer transfer = transferSerialiser.FromString(contents);
+                            BatchTransfer transfer = transferSerialiser.TransferFromString(contents);
                             return await InputFormatterResult.SuccessAsync(transfer);
                         }
-                        catch (Exception)
+                        catch (ParseException)
                         {
                             return await InputFormatterResult.FailureAsync();
                         }

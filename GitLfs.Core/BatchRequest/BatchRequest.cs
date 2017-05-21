@@ -10,7 +10,7 @@ namespace GitLfs.Core.BatchRequest
 
     public class BatchRequest
     {
-        public IList<BatchRequestObject> Objects { get; set; }
+        public IList<ObjectId> Objects { get; set; }
 
         public BatchRequestMode Operation { get; set; }
 

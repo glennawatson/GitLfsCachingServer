@@ -15,7 +15,7 @@ namespace GitLfs.Core.BatchResponse
 
         public int? ExpiresIn { get; set; }
 
-        public IList<KeyValuePair<string, string>> Headers { get; set; }
+        public List<BatchHeader> Headers { get; set; }
 
         public string HRef { get; set; }
 

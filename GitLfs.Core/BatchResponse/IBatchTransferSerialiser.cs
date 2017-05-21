@@ -16,7 +16,14 @@ namespace GitLfs.Core.BatchResponse
         /// </summary>
         /// <param name="value">The string value to convert from.</param>
         /// <returns>The transfer object.</returns>
-        BatchTransfer FromString(string value);
+        BatchTransfer TransferFromString(string value);
+
+		/// <summary>
+		/// Create a batch object from a string.
+		/// </summary>
+		/// <param name="value">The string value to convert from.</param>
+		/// <returns>The batch object.</returns>
+		BatchObject ObjectFromString(string value);
 
         /// <summary>
         /// Create a string value from a transfer.
@@ -24,5 +31,12 @@ namespace GitLfs.Core.BatchResponse
         /// <param name="transfer">The transfer object to convert from.</param>
         /// <returns>The string value representing the transfer object.</returns>
         string ToString(BatchTransfer transfer);
+
+        /// <summary>
+        /// Converts a batch object into a string.
+        /// </summary>
+        /// <returns>The string.</returns>
+        /// <param name="batchObject">Batch object.</param>
+        string ToString(BatchObject batchObject);
     }
 }

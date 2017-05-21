@@ -13,7 +13,8 @@ namespace GitLfs.Server.Caching
     using GitLfs.Core.BatchRequest;
     using GitLfs.Core.BatchResponse;
     using GitLfs.Core.Error;
-    using GitLfs.Core.Managers;
+    using GitLfs.Core.File;
+    using GitLfs.Core.Verify;
     using GitLfs.Server.Caching.Data;
     using GitLfs.Server.Caching.Formatters;
     using GitLfs.Server.Caching.Middleware;
@@ -141,6 +142,7 @@ namespace GitLfs.Server.Caching
             services.AddSingleton<IBatchRequestSerialiser>(new JsonBatchRequestSerialiser());
             services.AddSingleton<IBatchTransferSerialiser>(new JsonBatchTransferSerialiser());
             services.AddSingleton<IErrorResponseSerialiser>(new JsonErrorResponseSerialiser());
+            services.AddSingleton<IVerifyObjectSerialiser>(new JsonVerifyObjectSerialiser());
             services.AddSingleton<IFileManager, LfsFileManager>();
             services.AddTransient<ILfsClient, FileCachingLfsClient>();
         }

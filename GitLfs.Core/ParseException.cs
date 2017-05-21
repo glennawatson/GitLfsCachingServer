@@ -4,22 +4,22 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace GitLfs.Core.BatchResponse
+namespace GitLfs.Core
 {
     using System;
 
-    public class BatchTransferParseException : Exception
+    public class ParseException : LfsException
     {
-        public BatchTransferParseException()
+        public ParseException()
         {
         }
 
-        public BatchTransferParseException(string message)
+        public ParseException(string message)
             : base(message)
         {
         }
 
-        public BatchTransferParseException(string message, Exception innerException)
+        public ParseException(string message, Exception innerException)
             : base(message, innerException)
         {
         }
