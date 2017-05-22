@@ -1,8 +1,6 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="HomeController.cs" company="Glenn Watson">
-//     Copyright (C) 2017. Glenn Watson
+﻿// <copyright file="HomeController.cs" company="Glenn Watson">
+//    Copyright (C) 2017. Glenn Watson
 // </copyright>
-// --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Server.Caching.Controllers
 {
@@ -24,15 +22,15 @@ namespace GitLfs.Server.Caching.Controllers
             return this.View();
         }
 
+        public IActionResult Error()
+        {
+            return this.View();
+        }
+
         public IActionResult GitRepositories()
         {
             this.ViewData["Message"] = "GIT Repositories";
 
-            return this.View();
-        }
-
-        public IActionResult Error()
-        {
             return this.View();
         }
 

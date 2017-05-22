@@ -1,8 +1,6 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="ErrorResponse.cs" company="Glenn Watson">
-//     Copyright (C) 2017. Glenn Watson
+﻿// <copyright file="ErrorResponse.cs" company="Glenn Watson">
+//    Copyright (C) 2017. Glenn Watson
 // </copyright>
-// --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Core.Error
 {
@@ -33,7 +31,11 @@ namespace GitLfs.Core.Error
 
         public override string ToString()
         {
-            return string.Format("[ErrorResponse: DocumentationUrl={0}, Message={1}, RequestId={2}]", DocumentationUrl, Message, RequestId);
+            return string.Format(
+                "[ErrorResponse: DocumentationUrl={0}, Message={1}, RequestId={2}]",
+                this.DocumentationUrl,
+                this.Message,
+                this.RequestId);
         }
     }
 }

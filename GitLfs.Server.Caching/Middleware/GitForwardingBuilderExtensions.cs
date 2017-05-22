@@ -1,18 +1,22 @@
-﻿namespace GitLfs.Server.Caching.Middleware
+﻿// <copyright file="GitForwardingBuilderExtensions.cs" company="Glenn Watson">
+//    Copyright (C) 2017. Glenn Watson
+// </copyright>
+
+namespace GitLfs.Server.Caching.Middleware
 {
     using System;
 
     using Microsoft.AspNetCore.Builder;
 
     /// <summary>
-    /// Extension methods for the <see cref="GitForwardingBuilderExtensions"/>
+    /// Extension methods for the <see cref="GitForwardingBuilderExtensions" />
     /// </summary>
     public static class GitForwardingBuilderExtensions
     {
         /// <summary>
         /// Checks if a given Url matches rules and conditions, and modifies the HttpContext on match.
         /// </summary>
-        /// <param name="app">The <see cref="IApplicationBuilder"/></param>
+        /// <param name="app">The <see cref="IApplicationBuilder" /></param>
         /// <returns>The application builder.</returns>
         public static IApplicationBuilder UseGitForwarding(this IApplicationBuilder app)
         {

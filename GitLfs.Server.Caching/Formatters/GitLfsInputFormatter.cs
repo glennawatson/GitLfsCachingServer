@@ -1,8 +1,6 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="GitLfsInputFormatter.cs" company="Glenn Watson">
-//     Copyright (C) 2017. Glenn Watson
+﻿// <copyright file="GitLfsInputFormatter.cs" company="Glenn Watson">
+//    Copyright (C) 2017. Glenn Watson
 // </copyright>
-// --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Server.Caching.Formatters
 {
@@ -11,6 +9,7 @@ namespace GitLfs.Server.Caching.Formatters
     using System.Reflection;
     using System.Text;
     using System.Threading.Tasks;
+
     using GitLfs.Core;
     using GitLfs.Core.BatchRequest;
     using GitLfs.Core.BatchResponse;
@@ -22,12 +21,12 @@ namespace GitLfs.Server.Caching.Formatters
     using Microsoft.Net.Http.Headers;
 
     /// <summary>
-    /// A input formatter which handles the required files from GIT LFS. 
+    /// A input formatter which handles the required files from GIT LFS.
     /// </summary>
     public class GitLfsInputFormatter : TextInputFormatter
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="T:GitLfs.Server.Caching.Formatters.GitLfsInputFormatter"/> class.
+        /// Initializes a new instance of the <see cref="T:GitLfs.Server.Caching.Formatters.GitLfsInputFormatter" /> class.
         /// </summary>
         public GitLfsInputFormatter()
         {
@@ -94,7 +93,8 @@ namespace GitLfs.Server.Caching.Formatters
         /// <inheritdoc />
         protected override bool CanReadType(Type type)
         {
-            if (type.IsAssignableFrom(typeof(BatchTransfer)) || type.IsAssignableFrom(typeof(BatchRequest)) || type.IsAssignableFrom(typeof(ErrorResponse)))
+            if (type.IsAssignableFrom(typeof(BatchTransfer)) || type.IsAssignableFrom(typeof(BatchRequest))
+                || type.IsAssignableFrom(typeof(ErrorResponse)))
             {
                 return base.CanReadType(type);
             }

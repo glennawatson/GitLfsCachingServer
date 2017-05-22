@@ -1,4 +1,8 @@
-﻿namespace GitLfs.Core.Error
+﻿// <copyright file="IErrorResponseSerialiser.cs" company="Glenn Watson">
+//    Copyright (C) 2017. Glenn Watson
+// </copyright>
+
+namespace GitLfs.Core.Error
 {
     public interface IErrorResponseSerialiser
     {

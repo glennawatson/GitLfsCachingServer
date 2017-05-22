@@ -1,8 +1,6 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="JsonRequestSerialiser.cs" company="Glenn Watson">
-//     Copyright (C) 2017. Glenn Watson
+﻿// <copyright file="JsonBatchRequestSerialiser.cs" company="Glenn Watson">
+//    Copyright (C) 2017. Glenn Watson
 // </copyright>
-// --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Core.BatchRequest
 {
@@ -31,10 +29,10 @@ namespace GitLfs.Core.BatchRequest
         /// <inheritdoc />
         public string ToString(BatchRequest value)
         {
-            try 
+            try
             {
                 return JsonConvert.SerializeObject(value, CreateSettings());
-		    }
+            }
             catch (JsonException ex)
             {
                 throw new ParseException(ex.Message, ex);

@@ -1,14 +1,18 @@
-﻿namespace GitLfs.Core
+﻿// <copyright file="ErrorResponseException.cs" company="Glenn Watson">
+//    Copyright (C) 2017. Glenn Watson
+// </copyright>
+
+namespace GitLfs.Core
 {
-	using GitLfs.Core.Error;
+    using GitLfs.Core.Error;
 
     /// <summary>
     /// An exception that includes a error response.
     /// </summary>
-	public class ErrorResponseException : StatusCodeException
+    public class ErrorResponseException : StatusCodeException
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="T:GitLfs.Core.ErrorResponseException"/> class.
+        /// Initializes a new instance of the <see cref="T:GitLfs.Core.ErrorResponseException" /> class.
         /// </summary>
         /// <param name="response">The response.</param>
         public ErrorResponseException(ErrorResponse response, int? statusCode = null)

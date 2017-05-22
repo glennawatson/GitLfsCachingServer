@@ -1,8 +1,6 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="Transfer.cs" company="Glenn Watson">
-//     Copyright (C) 2017. Glenn Watson
+﻿// <copyright file="BatchTransfer.cs" company="Glenn Watson">
+//    Copyright (C) 2017. Glenn Watson
 // </copyright>
-// --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Core.BatchResponse
 {

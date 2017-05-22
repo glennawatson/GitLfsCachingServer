@@ -1,15 +1,10 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="BatchObject.cs" company="Glenn Watson">
-//     Copyright (C) 2017. Glenn Watson
+﻿// <copyright file="BatchObject.cs" company="Glenn Watson">
+//    Copyright (C) 2017. Glenn Watson
 // </copyright>
-// --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Core.BatchResponse
 {
-    using System;
     using System.Collections.Generic;
-    using System.ComponentModel.DataAnnotations;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// A object that we will perform batch operations on.

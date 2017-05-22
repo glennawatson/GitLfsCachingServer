@@ -1,5 +1,5 @@
 ﻿// <copyright file="GitLfsOutputFormatter.cs" company="Glenn Watson">
-//     Copyright (C) 2017. Glenn Watson
+//    Copyright (C) 2017. Glenn Watson
 // </copyright>
 
 namespace GitLfs.Server.Caching.Formatters
@@ -18,13 +18,13 @@ namespace GitLfs.Server.Caching.Formatters
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Net.Http.Headers;
 
-	/// <summary>
-	/// A output formatter which handles the required files from GIT LFS. 
-	/// </summary>
-	public class GitLfsOutputFormatter : TextOutputFormatter
+    /// <summary>
+    /// A output formatter which handles the required files from GIT LFS.
+    /// </summary>
+    public class GitLfsOutputFormatter : TextOutputFormatter
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="T:GitLfs.Server.Caching.Formatters.GitLfsOutputFormatter"/> class.
+        /// Initializes a new instance of the <see cref="T:GitLfs.Server.Caching.Formatters.GitLfsOutputFormatter" /> class.
         /// </summary>
         public GitLfsOutputFormatter()
         {

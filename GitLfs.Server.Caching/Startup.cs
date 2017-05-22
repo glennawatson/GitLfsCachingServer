@@ -1,12 +1,9 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="Startup.cs" company="Glenn Watson">
-//     Copyright (C) 2017. Glenn Watson
+﻿// <copyright file="Startup.cs" company="Glenn Watson">
+//    Copyright (C) 2017. Glenn Watson
 // </copyright>
-// --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Server.Caching
 {
-    using System.IO;
     using System.Threading.Tasks;
 
     using GitLfs.Client;
@@ -24,12 +21,12 @@ namespace GitLfs.Server.Caching
     using Microsoft.AspNetCore.Authentication.Cookies;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Hosting;
+    using Microsoft.AspNetCore.Http.Internal;
     using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
-    using Microsoft.AspNetCore.Http.Internal;
 
     using Newtonsoft.Json;
 
@@ -73,11 +70,12 @@ namespace GitLfs.Server.Caching
             loggerFactory.AddConsole(this.Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
 
-			app.Use(async (context, next) =>
-			{
-				context.Request.EnableRewind();
-				await next();
-			});
+            app.Use(
+                async (context, next) =>
+                    {
+                        context.Request.EnableRewind();
+                        await next();
+                    });
 
             if (env.IsDevelopment())
             {
@@ -97,11 +95,7 @@ namespace GitLfs.Server.Caching
             app.UseGitForwarding();
 
             // Add external authentication middle ware below. To configure them please see https://go.microsoft.com/fwlink/?LinkID=532715
-            app.UseMvc(
-                routes =>
-                    {
-                        routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}");
-                    });
+            app.UseMvc(routes => { routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}"); });
         }
 
         /// <summary>
@@ -116,32 +110,43 @@ namespace GitLfs.Server.Caching
 
             // Disable auto redirect on the api based syntax.
             services.AddIdentity<ApplicationUser, IdentityRole>(
-                    options =>
-                        {
-                            options.Cookies.ApplicationCookie.Events = new CookieAuthenticationEvents
-                                                                          {
-                                                                              OnRedirectToLogin = ctx =>
-                                                                                  {
-                                                                                      if (!ctx.Request.Path.StartsWithSegments("/api"))
-                                                                                      {
-                                                                                          ctx.Response.Redirect(ctx.RedirectUri);
-                                                                                      }
+                options =>
+                    {
+                        options.Cookies.ApplicationCookie.Events = new CookieAuthenticationEvents
+                                                                       {
+                                                                           OnRedirectToLogin
+                                                                               = ctx =>
+                                                                                   {
+                                                                                       if (
+                                                                                           !ctx
+                                                                                               .Request
+                                                                                               .Path
+                                                                                               .StartsWithSegments(
+                                                                                                   "/api")
+                                                                                       )
+                                                                                       {
+                                                                                           ctx
+                                                                                               .Response
+                                                                                               .Redirect(
+                                                                                                   ctx
+                                                                                                       .RedirectUri);
+                                                                                       }
 
-                                                                                      return Task.FromResult(0);
-                                                                                  }
-                                                                          };
-                        })
-                .AddEntityFrameworkStores<ApplicationDbContext>()
-                .AddDefaultTokenProviders();
+                                                                                       return
+                                                                                           Task
+                                                                                               .FromResult(
+                                                                                                   0);
+                                                                                   }
+                                                                       };
+                    }).AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
 
-            services
-                .AddMvc(
-                    options =>
-                        {
-                            options.OutputFormatters.Add(new GitLfsOutputFormatter());
-                            options.InputFormatters.Add(new GitLfsInputFormatter());
-                        })
-                .AddJsonOptions(options => options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore);
+            services.AddMvc(
+                options =>
+                    {
+                        options.OutputFormatters.Add(new GitLfsOutputFormatter());
+                        options.InputFormatters.Add(new GitLfsInputFormatter());
+                    }).AddJsonOptions(
+                options => options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore);
 
             // Add application services.
             services.AddTransient<IEmailSender, AuthMessageSender>();

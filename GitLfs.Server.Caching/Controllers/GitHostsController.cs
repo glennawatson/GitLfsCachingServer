@@ -1,8 +1,6 @@
-// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="GitHostsController.cs" company="Glenn Watson">
-//     Copyright (C) 2017. Glenn Watson
+//    Copyright (C) 2017. Glenn Watson
 // </copyright>
-// --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Server.Caching.Controllers
 {
@@ -44,7 +42,7 @@ namespace GitLfs.Server.Caching.Controllers
 
         /// <summary>
         /// Creates a new GitHost.
-        /// To protect from overposting attacks, please enable the specific properties you want to bind to, for 
+        /// To protect from overposting attacks, please enable the specific properties you want to bind to, for
         /// more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         /// </summary>
         /// <param name="gitHost">The new GitHost object to create.</param>

@@ -1,8 +1,10 @@
-﻿namespace GitLfs.Core.BatchResponse
-{
-    using System.ComponentModel.DataAnnotations;
+﻿// <copyright file="BatchHeader.cs" company="Glenn Watson">
+//    Copyright (C) 2017. Glenn Watson
+// </copyright>
 
-	public class BatchHeader
+namespace GitLfs.Core.BatchResponse
+{
+    public class BatchHeader
     {
         public BatchHeader()
         {

@@ -1,8 +1,6 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="ITransferSerialiser.cs" company="Glenn Watson">
-//     Copyright (C) 2017. Glenn Watson
+﻿// <copyright file="IBatchTransferSerialiser.cs" company="Glenn Watson">
+//    Copyright (C) 2017. Glenn Watson
 // </copyright>
-// --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Core.BatchResponse
 {
@@ -12,18 +10,11 @@ namespace GitLfs.Core.BatchResponse
     public interface IBatchTransferSerialiser
     {
         /// <summary>
-        /// Create a transfer object from a string.
+        /// Create a batch object from a string.
         /// </summary>
         /// <param name="value">The string value to convert from.</param>
-        /// <returns>The transfer object.</returns>
-        BatchTransfer TransferFromString(string value);
-
-		/// <summary>
-		/// Create a batch object from a string.
-		/// </summary>
-		/// <param name="value">The string value to convert from.</param>
-		/// <returns>The batch object.</returns>
-		BatchObject ObjectFromString(string value);
+        /// <returns>The batch object.</returns>
+        BatchObject ObjectFromString(string value);
 
         /// <summary>
         /// Create a string value from a transfer.
@@ -38,5 +29,12 @@ namespace GitLfs.Core.BatchResponse
         /// <returns>The string.</returns>
         /// <param name="batchObject">Batch object.</param>
         string ToString(BatchObject batchObject);
+
+        /// <summary>
+        /// Create a transfer object from a string.
+        /// </summary>
+        /// <param name="value">The string value to convert from.</param>
+        /// <returns>The transfer object.</returns>
+        BatchTransfer TransferFromString(string value);
     }
 }

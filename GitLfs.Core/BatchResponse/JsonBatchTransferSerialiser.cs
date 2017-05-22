@@ -1,8 +1,6 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="JsonTransferSerialiser.cs" company="Glenn Watson">
-//     Copyright (C) 2017. Glenn Watson
+﻿// <copyright file="JsonBatchTransferSerialiser.cs" company="Glenn Watson">
+//    Copyright (C) 2017. Glenn Watson
 // </copyright>
-// --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Core.BatchResponse
 {
@@ -18,6 +16,35 @@ namespace GitLfs.Core.BatchResponse
     /// </summary>
     public class JsonBatchTransferSerialiser : IBatchTransferSerialiser
     {
+        /// <inheritdoc />
+        public BatchObject ObjectFromString(string json)
+        {
+            return this.ProcessBatchObjectJson(JObject.Parse(json));
+        }
+
+        /// <inheritdoc />
+        public string ToString(BatchTransfer transfer)
+        {
+            var jsonTransfer = new JObject { ["transfer"] = transfer.Mode.ToString().ToLowerInvariant() };
+
+            var objectItemsToken = new JArray();
+
+            jsonTransfer["objects"] = objectItemsToken;
+
+            foreach (BatchObject objectValue in transfer.Objects)
+            {
+                objectItemsToken.Add(this.ProcessBatchObject(objectValue));
+            }
+
+            return jsonTransfer.ToString(Formatting.Indented);
+        }
+
+        /// <inheritdoc />
+        public string ToString(BatchObject batchObject)
+        {
+            return this.ProcessBatchObject(batchObject).ToString();
+        }
+
         /// <inheritdoc />
         public BatchTransfer TransferFromString(string json)
         {
@@ -45,7 +72,6 @@ namespace GitLfs.Core.BatchResponse
                 }
                 else
                 {
-
                     batchObject = this.ProcessBatchObjectJson(item);
                 }
 
@@ -57,43 +83,61 @@ namespace GitLfs.Core.BatchResponse
             return transfer;
         }
 
-		/// <inheritdoc />
-		public BatchObject ObjectFromString(string json)
+        private JObject ProcessBatchObject(BatchObject objectValue)
         {
-            return this.ProcessBatchObjectJson(JObject.Parse(json));
-        }
+            var objectToken = new JObject { ["oid"] = objectValue.Id.Hash, ["size"] = objectValue.Id.Size };
 
-        /// <inheritdoc />
-        public string ToString(BatchTransfer transfer)
-        {
-            var jsonTransfer = new JObject { ["transfer"] = transfer.Mode.ToString().ToLowerInvariant() };
-
-            var objectItemsToken = new JArray();
-
-            jsonTransfer["objects"] = objectItemsToken;
-
-            foreach (BatchObject objectValue in transfer.Objects)
+            if (objectValue.Authenticated != null)
             {
-                objectItemsToken.Add(ProcessBatchObject(objectValue));
-			}
+                objectToken["authenticated"] = objectValue.Authenticated;
+            }
 
-            return jsonTransfer.ToString(Formatting.Indented);
-        }
+            var actionsArray = new JObject();
 
-		/// <inheritdoc />
-		public string ToString(BatchObject batchObject)
-        {
-            return ProcessBatchObject(batchObject).ToString();
+            objectToken["actions"] = actionsArray;
+
+            foreach (BatchObjectAction action in objectValue.Actions)
+            {
+                var actionContents = new JObject { new JProperty("href", action.HRef) };
+
+                if (action.Headers != null)
+                {
+                    var headers = new JObject();
+                    foreach (BatchHeader header in action.Headers)
+                    {
+                        var property = new JProperty(header.Key, header.Value);
+                        headers.Add(property);
+                    }
+
+                    actionContents["header"] = headers;
+                }
+
+                if (action.ExpiresIn != null)
+                {
+                    actionContents.Add(new JProperty("expires_in", action.ExpiresIn));
+                }
+
+                if (action.ExpiresAt != null)
+                {
+                    actionContents.Add(new JProperty("expires_at", action.ExpiresAt.Value.ToUniversalTime()));
+                }
+
+                var actionToken = new JProperty(action.Mode.ToString().ToLowerInvariant(), actionContents);
+
+                actionsArray.Add(actionToken);
+            }
+
+            return objectToken;
         }
 
         private BatchObject ProcessBatchObjectJson(JToken item)
         {
-			var batchObjectFile = new BatchObject();
-			batchObjectFile.Authenticated = (bool?)item["authenticated"];
+            var batchObjectFile = new BatchObject();
+            batchObjectFile.Authenticated = (bool?)item["authenticated"];
 
-			JToken actionsToken = item["actions"];
+            JToken actionsToken = item["actions"];
 
-			batchObjectFile.Actions = new List<BatchObjectAction>();
+            batchObjectFile.Actions = new List<BatchObjectAction>();
 
             if (actionsToken != null)
             {
@@ -114,7 +158,7 @@ namespace GitLfs.Core.BatchResponse
 
                     if (headerToken != null)
                     {
-                        List<BatchHeader> headers = new List<BatchHeader>();
+                        var headers = new List<BatchHeader>();
 
                         foreach (JProperty headerPair in headerToken.Cast<JProperty>())
                         {
@@ -129,53 +173,6 @@ namespace GitLfs.Core.BatchResponse
             }
 
             return batchObjectFile;
-		}
-
-        private JObject ProcessBatchObject(BatchObject objectValue)
-        {
-			var objectToken = new JObject { ["oid"] = objectValue.Id.Hash, ["size"] = objectValue.Id.Size };
-
-			if (objectValue.Authenticated != null)
-			{
-				objectToken["authenticated"] = objectValue.Authenticated;
-			}
-
-			var actionsArray = new JObject();
-
-			objectToken["actions"] = actionsArray;
-
-			foreach (BatchObjectAction action in objectValue.Actions)
-			{
-				var actionContents = new JObject { new JProperty("href", action.HRef) };
-
-				if (action.Headers != null)
-				{
-					var headers = new JObject();
-					foreach (BatchHeader header in action.Headers)
-					{
-						var property = new JProperty(header.Key, header.Value);
-						headers.Add(property);
-					}
-
-					actionContents["header"] = headers;
-				}
-
-				if (action.ExpiresIn != null)
-				{
-					actionContents.Add(new JProperty("expires_in", action.ExpiresIn));
-				}
-
-				if (action.ExpiresAt != null)
-				{
-					actionContents.Add(new JProperty("expires_at", action.ExpiresAt.Value.ToUniversalTime()));
-				}
-
-				var actionToken = new JProperty(action.Mode.ToString().ToLowerInvariant(), actionContents);
-
-				actionsArray.Add(actionToken);
-			}
-
-            return objectToken;
         }
     }
 }
