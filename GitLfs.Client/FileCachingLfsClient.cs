@@ -119,18 +119,19 @@ namespace GitLfs.Client
             {
                 SetClientHeaders(action, httpClient);
 
-                Stream stream = this.fileManager.GetFileStream(repositoryName, objectId, FileLocation.Temporary);
-
-                using (var content = new StreamContent(stream))
+                using (Stream stream = this.fileManager.GetFileStream(repositoryName, objectId, FileLocation.Temporary))
                 {
-                    content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
-                    this.logger.LogInformation(
-                        $"Uploading to {action.HRef} with repository name {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}");
-                    HttpResponseMessage result = await httpClient.PutAsync(action.HRef, content);
-
-                    if (result.IsSuccessStatusCode == false)
+                    using (var content = new StreamContent(stream))
                     {
-                        await this.HandleError(result);
+                        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
+                        this.logger.LogInformation(
+                            $"Uploading to {action.HRef} with repository name {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}");
+                        HttpResponseMessage result = await httpClient.PutAsync(action.HRef, content);
+
+                        if (result.IsSuccessStatusCode == false)
+                        {
+                            await this.HandleError(result);
+                        }
                     }
                 }
             }

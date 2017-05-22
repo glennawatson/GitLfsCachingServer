@@ -19,12 +19,12 @@ namespace GitLfs.Server.Caching
         /// <param name="args">The arguments passed to the applications.</param>
         public static void Main(string[] args)
         {
-            IWebHost host = new WebHostBuilder().UseUrls("http://*:5000").UseKestrel()
+            IWebHost host = new WebHostBuilder()
+                .CaptureStartupErrors(true)
+                .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
-
-                // .UseIISIntegration()
+                .UseIISIntegration()
                 .UseStartup<Startup>()
-
                 // .UseApplicationInsights()
                 .Build();
 

@@ -13,6 +13,7 @@ namespace GitLfs.Server.Caching
     using GitLfs.Core.File;
     using GitLfs.Core.Verify;
     using GitLfs.Server.Caching.Data;
+    using GitLfs.Server.Caching.Extensions;
     using GitLfs.Server.Caching.Formatters;
     using GitLfs.Server.Caching.Middleware;
     using GitLfs.Server.Caching.Models;
@@ -96,6 +97,8 @@ namespace GitLfs.Server.Caching
 
             // Add external authentication middle ware below. To configure them please see https://go.microsoft.com/fwlink/?LinkID=532715
             app.UseMvc(routes => { routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}"); });
+
+            app.EnsureMigrationOfContext<ApplicationDbContext>();
         }
 
         /// <summary>
@@ -113,31 +116,17 @@ namespace GitLfs.Server.Caching
                 options =>
                     {
                         options.Cookies.ApplicationCookie.Events = new CookieAuthenticationEvents
-                                                                       {
-                                                                           OnRedirectToLogin
-                                                                               = ctx =>
-                                                                                   {
-                                                                                       if (
-                                                                                           !ctx
-                                                                                               .Request
-                                                                                               .Path
-                                                                                               .StartsWithSegments(
-                                                                                                   "/api")
-                                                                                       )
-                                                                                       {
-                                                                                           ctx
-                                                                                               .Response
-                                                                                               .Redirect(
-                                                                                                   ctx
-                                                                                                       .RedirectUri);
-                                                                                       }
+                                            {
+                                                OnRedirectToLogin = ctx =>
+                                                        {
+                                                            if (!ctx.Request.Path.StartsWithSegments("/api"))
+                                                            {
+                                                                ctx.Response.Redirect(ctx.RedirectUri);
+                                                            }
 
-                                                                                       return
-                                                                                           Task
-                                                                                               .FromResult(
-                                                                                                   0);
-                                                                                   }
-                                                                       };
+                                                            return Task.FromResult(0);
+                                                        }
+                                            };
                     }).AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
 
             services.AddMvc(
@@ -145,8 +134,7 @@ namespace GitLfs.Server.Caching
                     {
                         options.OutputFormatters.Add(new GitLfsOutputFormatter());
                         options.InputFormatters.Add(new GitLfsInputFormatter());
-                    }).AddJsonOptions(
-                options => options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore);
+                    }).AddJsonOptions(options => options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore);
 
             // Add application services.
             services.AddTransient<IEmailSender, AuthMessageSender>();
