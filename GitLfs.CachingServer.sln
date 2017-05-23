@@ -3,13 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26430.4
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitLfs.CachingServer", "GitLfs.CachingServer\GitLfs.CachingServer.csproj", "{8AC10E2C-C2AC-4A48-9555-A28867EA15A0}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitLfs.Client", "GitLfs.Client\GitLfs.Client.csproj", "{B1E0B781-B9A3-4B54-B2EC-85914AF27962}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitLfs.Core", "GitLfs.Core\GitLfs.Core.csproj", "{FE7FEFF1-58A1-4784-BD92-BA73061067FD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitLfs.Core.Tests", "GitLfs.Core.Tests\GitLfs.Core.Tests.csproj", "{2E3DF5C2-8A38-4A03-86D7-8D463C917E47}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitLfs.Core.Tests", "GitLfs.Core.Tests\GitLfs.Core.Tests.csproj", "{74F115C2-582B-412C-A20B-7A6819B404DA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitLfs.Server.Caching", "GitLfs.Server.Caching\GitLfs.Server.Caching.csproj", "{616A4F53-CDEC-4808-BE9A-CDFC98C4F1DC}"
+EndProject
+Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{43DD5F79-22A5-45BC-B182-37EE1BBB9E16}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +19,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{8AC10E2C-C2AC-4A48-9555-A28867EA15A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8AC10E2C-C2AC-4A48-9555-A28867EA15A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8AC10E2C-C2AC-4A48-9555-A28867EA15A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8AC10E2C-C2AC-4A48-9555-A28867EA15A0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B1E0B781-B9A3-4B54-B2EC-85914AF27962}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B1E0B781-B9A3-4B54-B2EC-85914AF27962}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B1E0B781-B9A3-4B54-B2EC-85914AF27962}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -29,10 +27,18 @@ Global
 		{FE7FEFF1-58A1-4784-BD92-BA73061067FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FE7FEFF1-58A1-4784-BD92-BA73061067FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FE7FEFF1-58A1-4784-BD92-BA73061067FD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2E3DF5C2-8A38-4A03-86D7-8D463C917E47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2E3DF5C2-8A38-4A03-86D7-8D463C917E47}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2E3DF5C2-8A38-4A03-86D7-8D463C917E47}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2E3DF5C2-8A38-4A03-86D7-8D463C917E47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{74F115C2-582B-412C-A20B-7A6819B404DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{74F115C2-582B-412C-A20B-7A6819B404DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{74F115C2-582B-412C-A20B-7A6819B404DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{74F115C2-582B-412C-A20B-7A6819B404DA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{616A4F53-CDEC-4808-BE9A-CDFC98C4F1DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{616A4F53-CDEC-4808-BE9A-CDFC98C4F1DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{616A4F53-CDEC-4808-BE9A-CDFC98C4F1DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{616A4F53-CDEC-4808-BE9A-CDFC98C4F1DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{43DD5F79-22A5-45BC-B182-37EE1BBB9E16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43DD5F79-22A5-45BC-B182-37EE1BBB9E16}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43DD5F79-22A5-45BC-B182-37EE1BBB9E16}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43DD5F79-22A5-45BC-B182-37EE1BBB9E16}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,34 +1,34 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="ILfsClient.cs" company="Glenn Watson">
-//   Copyright (C) 2017. Glenn Watson
+﻿// <copyright file="ILfsClient.cs" company="Glenn Watson">
+//    Copyright (C) 2017. Glenn Watson
 // </copyright>
-// <summary>
-//   Represents a GIT LFS client.
-// </summary>
-// --------------------------------------------------------------------------------------------------------------------
 
 namespace GitLfs.Client
 {
-    using System.Collections.Generic;
+    using System.IO;
     using System.Threading.Tasks;
 
+    using GitLfs.Core;
+    using GitLfs.Core.BatchRequest;
+    using GitLfs.Core.BatchResponse;
+
     /// <summary>
-    /// Represents a GIT LFS client. 
+    /// Represents a GIT LFS client.
     /// </summary>
     public interface ILfsClient
     {
-        /// <summary>
-        /// Downloads a file.
-        /// </summary>
-        /// <param name="objectId">The object id of the object.</param>
-        /// <returns>The location on the local file system where the file is located.</returns>
-        Task<string> DownloadFile(string objectId);
+        Task<Stream> DownloadFile(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action);
 
         /// <summary>
-        /// Downloads several files.
+        /// Requests a batch transfer from the server.
         /// </summary>
-        /// <param name="objectIds">The object ids of items to download.</param>
-        /// <returns>The list of file paths.</returns>
-        Task<IEnumerable<string>> DownloadFiles(IEnumerable<string> objectIds);
+        /// <returns>The batch transfer returned from the server.</returns>
+        /// <param name="host">The host details where to upload the file.</param>
+        /// <param name="repositoryName">The repository name.</param>
+        /// <param name="request">The request details for the server.</param>
+        Task<BatchTransfer> RequestBatch(GitHost host, string repositoryName, BatchRequest request);
+
+        Task UploadFile(BatchObjectAction action, Stream stream);
+
+        Task Verify(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action);
     }
 }
