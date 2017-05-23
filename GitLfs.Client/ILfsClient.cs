@@ -27,7 +27,7 @@ namespace GitLfs.Client
         /// <param name="request">The request details for the server.</param>
         Task<BatchTransfer> RequestBatch(GitHost host, string repositoryName, BatchRequest request);
 
-        Task UploadFile(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action);
+        Task UploadFile(BatchObjectAction action, Stream stream);
 
         Task Verify(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action);
     }

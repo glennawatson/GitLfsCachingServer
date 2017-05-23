@@ -69,5 +69,11 @@ namespace GitLfs.Core
         {
             return this.Hash.GetHashCode() ^ this.Size.GetHashCode();
         }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return $"SHA256: {this.Hash}, Size: {this.Size}";
+        }
     }
 }

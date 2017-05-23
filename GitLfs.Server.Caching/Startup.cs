@@ -4,6 +4,7 @@
 
 namespace GitLfs.Server.Caching
 {
+    using System.IO;
     using System.Threading.Tasks;
 
     using GitLfs.Client;
@@ -68,6 +69,16 @@ namespace GitLfs.Server.Caching
         /// <param name="loggerFactory">A logging factory where we can register logging details.</param>
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
+            if (Directory.Exists(env.ContentRootPath + "/lfs/meta"))
+            {
+                Directory.Delete(env.ContentRootPath + "/lfs/meta", true);
+            }
+
+            if (Directory.Exists(env.ContentRootPath + "/lfs/temp"))
+            {
+                Directory.Delete(env.ContentRootPath + "/lfs/temp", true);
+            }
+
             loggerFactory.AddConsole(this.Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
 
@@ -116,17 +127,17 @@ namespace GitLfs.Server.Caching
                 options =>
                     {
                         options.Cookies.ApplicationCookie.Events = new CookieAuthenticationEvents
-                                            {
-                                                OnRedirectToLogin = ctx =>
-                                                        {
-                                                            if (!ctx.Request.Path.StartsWithSegments("/api"))
-                                                            {
-                                                                ctx.Response.Redirect(ctx.RedirectUri);
-                                                            }
+                        {
+                            OnRedirectToLogin = ctx =>
+                                    {
+                                        if (!ctx.Request.Path.StartsWithSegments("/api"))
+                                        {
+                                            ctx.Response.Redirect(ctx.RedirectUri);
+                                        }
 
-                                                            return Task.FromResult(0);
-                                                        }
-                                            };
+                                        return Task.FromResult(0);
+                                    }
+                        };
                     }).AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
 
             services.AddMvc(

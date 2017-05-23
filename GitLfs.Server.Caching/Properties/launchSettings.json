@@ -1,4 +1,4 @@
-﻿{
+{
   "iisSettings": {
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
@@ -17,11 +17,11 @@
     },
     "GitLfs.Server.Caching": {
       "commandName": "Project",
-      "launchBrowser": true,
+      "commandLineArgs": "--server.urls http://*:5000",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "http://localhost:51733"
+      "applicationUrl": "http://192.168.0.72:5000"
     }
   }
 }

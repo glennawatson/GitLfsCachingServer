@@ -113,26 +113,26 @@ namespace GitLfs.Client
             }
         }
 
-        public async Task UploadFile(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action)
+        public async Task UploadFile(BatchObjectAction action, Stream stream)
         {
             using (var httpClient = new HttpClient())
             {
                 SetClientHeaders(action, httpClient);
 
-                using (Stream stream = this.fileManager.GetFileStream(repositoryName, objectId, FileLocation.Temporary))
-                {
-                    using (var content = new StreamContent(stream))
-                    {
-                        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
-                        this.logger.LogInformation(
-                            $"Uploading to {action.HRef} with repository name {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}");
-                        HttpResponseMessage result = await httpClient.PutAsync(action.HRef, content);
+                var content = new StreamContent(stream, 2000);
+                content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
+                this.logger.LogInformation($"Uploading to {action.HRef}");
+                HttpResponseMessage result = await httpClient.PutAsync(action.HRef, content);
 
-                        if (result.IsSuccessStatusCode == false)
-                        {
-                            await this.HandleError(result);
-                        }
-                    }
+                if (result.IsSuccessStatusCode == false)
+                {
+                    this.logger.LogInformation($"Failed uploading to {action.HRef}");
+                    await this.HandleError(result);
+                }
+                else
+                {
+                    this.logger.LogInformation(
+                        $"Success uploading to {action.HRef}");
                 }
             }
         }

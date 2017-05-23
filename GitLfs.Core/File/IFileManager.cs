@@ -19,6 +19,7 @@ namespace GitLfs.Core.File
         /// <param name="repositoryName">The name of the repository.</param>
         /// <param name="objectId">The object id of the stream.</param>
         /// <param name="location">Location of the file.</param>
+        /// <param name="suffix">Suffix to add to the file name.</param>
         /// <returns>The contents of the file.</returns>
         Stream GetFileStream(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null);
 
@@ -28,6 +29,7 @@ namespace GitLfs.Core.File
         /// <param name="repositoryName">The name of the repository.</param>
         /// <param name="objectId">The object id of the stream.</param>
         /// <param name="location">Location of the file.</param>
+        /// <param name="suffix">Suffix to add to the file name.</param>
         /// <returns>The contents of the file.</returns>
         Task<string> GetFileContentsAsync(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null);
 
@@ -37,6 +39,7 @@ namespace GitLfs.Core.File
         /// <param name="repositoryName">The name of the repository.</param>
         /// <param name="objectId">The object id of the stream.</param>
         /// <param name="location">Location of the file.</param>
+        /// <param name="suffix">Suffix to add to the file name.</param>
         /// <returns>The file path of the file.</returns>
         string GetFilePath(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null);
 
@@ -47,6 +50,7 @@ namespace GitLfs.Core.File
         /// <param name="objectId">The object id of the stream.</param>
         /// <param name="location">Location of the file.</param>
         /// <param name="contents">The contents of the file.</param>
+        /// <param name="suffix">Suffix to add to the file name.</param>
         /// <returns>The file name.</returns>
         string SaveFile(string repositoryName, ObjectId objectId, FileLocation location, Stream contents, string suffix = null);
 
@@ -57,6 +61,7 @@ namespace GitLfs.Core.File
         /// <param name="objectId">The object id of the stream.</param>
         /// <param name="location">Location of the file.</param>
         /// <param name="contents">The contents of the file.</param>
+        /// <param name="suffix">Suffix to add to the file name.</param>
         /// <returns>A task to monitor the progress.</returns>
         Task<string> SaveFileAsync(string repositoryName, ObjectId objectId, FileLocation location, string contents, string suffix = null);
 
@@ -67,6 +72,7 @@ namespace GitLfs.Core.File
         /// <param name="objectId">The object id of the stream.</param>
         /// <param name="location">Location of the file.</param>
         /// <param name="contents">The contents of the file.</param>
+        /// <param name="suffix">Suffix to add to the file name.</param>
         /// <returns>The file name.</returns>
         Task<string> SaveFileAsync(string repositoryName, ObjectId objectId, FileLocation location, Stream contents, string suffix = null);
 
@@ -77,6 +83,7 @@ namespace GitLfs.Core.File
         /// <param name="objectId">The Object identifier.</param>
         /// <param name="from">The location where the move the file from.</param>
         /// <param name="to">The location to move the file to.</param>
+        /// <param name="suffix">Suffix to add to the file name.</param>
         void MoveFile(string repositoryName, ObjectId objectId, FileLocation from, FileLocation to, string suffix = null);
 
         /// <summary>
@@ -85,6 +92,7 @@ namespace GitLfs.Core.File
         /// <param name="repositoryName">Repository name.</param>
         /// <param name="objectId">Object identifier.</param>
         /// <param name="location">Location of the file.</param>
+        /// <param name="suffix">Suffix to add to the file name.</param>
         void DeleteFile(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null);
 
         /// <summary>
@@ -93,7 +101,18 @@ namespace GitLfs.Core.File
         /// <param name="repositoryName">The name of the repository.</param>
         /// <param name="objectId">The object id of the stream.</param>
         /// <param name="location">Location of the file.</param>
+        /// <param name="suffix">Suffix to add to the file name.</param>
         /// <returns><c>true</c>, if file stored in storage, <c>false</c> otherwise.</returns>
-        bool IsFileStored(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null);
+        bool IsFileStored(string repositoryName, ObjectId objectId, FileLocation location, bool matchSize = false, string suffix = null);
+
+        /// <summary>
+        /// Gets the file size.
+        /// </summary>
+        /// <param name="repositoryName">The name of the repository.</param>
+        /// <param name="objectId">The object id of the stream.</param>
+        /// <param name="location">Location of the file.</param>
+        /// <param name="suffix">Suffix to add to the file name.</param>
+        /// <returns>The length of the file.</returns>
+        long GetFileSize(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null);
     }
 }

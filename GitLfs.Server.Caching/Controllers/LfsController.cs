@@ -53,6 +53,8 @@ namespace GitLfs.Server.Caching.Controllers
         [HttpGet("/api/{hostId}/{repositoryName}/info/lfs/{objectId}/{size}")]
         public async Task<IActionResult> DownloadFile(int hostId, string repositoryName, string objectId, long size)
         {
+            var fileObjectId = new ObjectId(objectId, size);
+
             try
             {
                 GitHost host = await this.context.GitHost.FindAsync(hostId);
@@ -61,8 +63,6 @@ namespace GitLfs.Server.Caching.Controllers
                 {
                     return this.NotFound(new ErrorResponse { Message = "Not a valid host id." });
                 }
-
-                var fileObjectId = new ObjectId(objectId, size);
 
                 Stream stream = this.fileManager.GetFileStream(repositoryName, fileObjectId, FileLocation.Permenant);
 
@@ -107,10 +107,12 @@ namespace GitLfs.Server.Caching.Controllers
             }
             catch (ErrorResponseException ex)
             {
+                this.logger.LogWarning(null, ex, $"Received a error response with message {ex.Message} for {fileObjectId}");
                 return this.StatusCode(ex.StatusCode.Value, ex.ErrorResponse);
             }
             catch (StatusCodeException ex)
             {
+                this.logger.LogWarning(null, ex, $"Received a status code error with message {ex.Message}");
                 return this.StatusCode(ex.StatusCode.Value, new ErrorResponse { Message = ex.Message });
             }
         }
@@ -161,13 +163,14 @@ namespace GitLfs.Server.Caching.Controllers
 
                         if (batchObject != null)
                         {
-                            foreach (var action in batchObject.Actions)
+                            foreach (BatchObjectAction action in batchObject.Actions)
                             {
                                 await this.fileManager.SaveFileAsync(
                                     repositoryName,
                                     serverResult.Id,
                                     FileLocation.Metadata,
-                                    this.transferSerialiser.ToString(action), action.Mode.ToString().ToLowerInvariant());
+                                    this.transferSerialiser.ToString(action),
+                                    action.Mode.ToString().ToLowerInvariant());
                             }
                         }
                     }
@@ -183,52 +186,24 @@ namespace GitLfs.Server.Caching.Controllers
                     var errorResult = batchObjectBase as BatchObjectError;
                     var batchObject = batchObjectBase as BatchObject;
 
-                    var returnBatchObject =
-                        new BatchObject { Id = pendingObjectId, Actions = new List<BatchObjectAction>() };
-
-                    returnResult.Objects.Add(returnBatchObject);
-
                     if (errorResult != null)
                     {
                         returnResult.Objects.Add(errorResult);
                     }
+                    else if (request.Operation == BatchRequestMode.Upload)
+                    {
+                        returnResult.Objects.Add(batchObject);
+                    }
                     else if (request.Operation == BatchRequestMode.Download)
                     {
+                        var returnBatchObject = new BatchObject { Id = pendingObjectId, Actions = new List<BatchObjectAction>() };
                         var action = new BatchObjectAction();
                         action.Mode = BatchActionMode.Download;
                         action.HRef =
                             $"{this.Request.Scheme}://{this.Request.Host}/api/{hostId}/{repositoryName}/info/lfs/{pendingObjectId.Hash}/{pendingObjectId.Size}";
 
                         returnBatchObject.Actions.Add(action);
-                    }
-                    else if (request.Operation == BatchRequestMode.Upload)
-                    {
-                        if (batchObject == null || (batchObject.Actions.Count == 0 && this.fileManager.IsFileStored(
-                                repositoryName,
-                                pendingObjectId,
-                                FileLocation.Permenant)))
-                        {
-                            continue;
-                        }
-
-                        var uploadAction =
-                            new BatchObjectAction
-                            {
-                                Mode = BatchActionMode.Upload,
-                                HRef =
-                                        $"{this.Request.Scheme}://{this.Request.Host}/api/{hostId}/{repositoryName}/info/lfs/{pendingObjectId.Hash}/{pendingObjectId.Size}"
-                            };
-
-                        var verifyAction =
-                            new BatchObjectAction
-                            {
-                                Mode = BatchActionMode.Verify,
-                                HRef =
-                                        $"{this.Request.Scheme}://{this.Request.Host}/api/{hostId}/{repositoryName}/info/lfs/verify/{pendingObjectId.Hash}/{pendingObjectId.Size}"
-                            };
-
-                        returnBatchObject.Actions.Add(uploadAction);
-                        returnBatchObject.Actions.Add(verifyAction);
+                        returnResult.Objects.Add(returnBatchObject);
                     }
                 }
 
@@ -236,12 +211,12 @@ namespace GitLfs.Server.Caching.Controllers
             }
             catch (ErrorResponseException ex)
             {
-                this.logger.LogWarning($"Received a error response with message {ex.Message}");
+                this.logger.LogWarning(null, ex, $"Received a error response with message {ex.Message}");
                 return this.StatusCode(ex.StatusCode.Value, ex.ErrorResponse);
             }
             catch (StatusCodeException ex)
             {
-                this.logger.LogWarning($"Received a status code error with message {ex.Message}");
+                this.logger.LogWarning(null, ex, $"Received a status code error with message {ex.Message}");
                 return this.StatusCode(ex.StatusCode.Value, new ErrorResponse { Message = ex.Message });
             }
         }
@@ -257,52 +232,45 @@ namespace GitLfs.Server.Caching.Controllers
 
                 if (host == null)
                 {
-                    return this.NotFound(new ErrorResponse { Message = "Not a valid host id." });
+                    this.logger.LogWarning("Not a valid host id");
+                    return this.NotFound(new ErrorResponse { Message = "Not a valid host id" });
                 }
 
                 this.logger.LogInformation($"Saving the file to disk for {fileObjectId}");
-                this.fileManager.SaveFile(repositoryName, fileObjectId, FileLocation.Temporary, this.Request.Body);
 
-                if (this.fileManager.IsFileStored(repositoryName, fileObjectId, FileLocation.Metadata, "upload"))
+                this.Response.Headers.Remove("transfer-encoding");
+
+                if (!this.fileManager.IsFileStored(
+                        repositoryName,
+                        fileObjectId,
+                        FileLocation.Metadata,
+                        false,
+                        "upload"))
                 {
-                    BatchObjectAction action = this.transferSerialiser.ObjectActionFromString(await this.fileManager.GetFileContentsAsync(repositoryName, fileObjectId, FileLocation.Metadata, "upload"));
-
-                    if (action == null)
-                    {
-                        this.logger.LogInformation($"No action to perform for {fileObjectId}");
-                        return this.Ok();
-                    }
-
-                    if (action.Mode != BatchActionMode.Upload)
-                    {
-                        this.logger.LogWarning($"Unexcepted action mode {action.Mode} for {fileObjectId}");
-
-                        return this.StatusCode(
-                            422,
-                            new ErrorResponse
-                            {
-                                Message =
-                                        $"Invalid mode {action.Mode}, expecting Upload"
-                            });
-                    }
-
-                    this.logger.LogInformation($"Starting file upload for {fileObjectId}");
-                    await this.lfsClient.UploadFile(host, repositoryName, fileObjectId, action);
-                    this.logger.LogInformation($"Finished file upload for {fileObjectId}");
+                    this.fileManager.DeleteFile(repositoryName, fileObjectId, FileLocation.Metadata, "upload");
+                    return this.Ok();
                 }
 
-                this.fileManager.DeleteFile(repositoryName, fileObjectId, FileLocation.Metadata, "upload");
+                BatchObjectAction action = this.transferSerialiser.ObjectActionFromString(await this.fileManager.GetFileContentsAsync(repositoryName, fileObjectId, FileLocation.Metadata, "upload"));
 
+
+                this.logger.LogInformation($"Starting file upload for {fileObjectId}");
+                await this.lfsClient.UploadFile(action, this.Request.Body);
+                this.logger.LogInformation($"Finished file upload for {fileObjectId}");
+
+                this.fileManager.DeleteFile(repositoryName, fileObjectId, FileLocation.Metadata, "upload");
                 return this.Ok();
             }
             catch (ErrorResponseException ex)
             {
-                this.logger.LogWarning($"Received a error response with message {ex.Message} for {fileObjectId}");
+                this.logger.LogWarning(null, ex, $"Received a error response with message {ex.Message} for {fileObjectId}");
+                this.fileManager.DeleteFile(repositoryName, fileObjectId, FileLocation.Temporary);
                 return this.StatusCode(ex.StatusCode.Value, ex.ErrorResponse);
             }
             catch (StatusCodeException ex)
             {
-                this.logger.LogWarning($"Received a status code error with message {ex.Message} for {fileObjectId}");
+                this.logger.LogWarning(null, ex, $"Received a status code error with message {ex.Message} for {fileObjectId}");
+                this.fileManager.DeleteFile(repositoryName, fileObjectId, FileLocation.Temporary);
                 return this.StatusCode(ex.StatusCode.Value, new ErrorResponse { Message = ex.Message });
             }
         }
@@ -310,6 +278,8 @@ namespace GitLfs.Server.Caching.Controllers
         [HttpPost("/api/{hostId}/{repositoryName}/info/lfs/verify/{objectId}/{size}")]
         public async Task<IActionResult> Verify(int hostId, string repositoryName, string objectId, long size)
         {
+            var fileObjectId = new ObjectId(objectId, size);
+
             try
             {
                 GitHost host = await this.context.GitHost.FindAsync(hostId);
@@ -319,16 +289,16 @@ namespace GitLfs.Server.Caching.Controllers
                     return this.NotFound(new ErrorResponse { Message = "Not a valid host id." });
                 }
 
-                var fileObjectId = new ObjectId(objectId, size);
-
                 this.fileManager.MoveFile(repositoryName, fileObjectId, FileLocation.Temporary, FileLocation.Permenant);
 
-                if (this.fileManager.IsFileStored(repositoryName, fileObjectId, FileLocation.Metadata, "verify"))
+                if (this.fileManager.IsFileStored(repositoryName, fileObjectId, FileLocation.Metadata, false, "verify"))
                 {
+                    this.logger.LogInformation($"Starting verify for {fileObjectId}");
                     BatchObjectAction action = this.transferSerialiser.ObjectActionFromString(await this.fileManager.GetFileContentsAsync(repositoryName, fileObjectId, FileLocation.Metadata, "verify"));
-
                     await this.lfsClient.Verify(host, repositoryName, fileObjectId, action);
+                    this.logger.LogInformation($"Ending verify for {fileObjectId}");
                 }
+
 
                 this.fileManager.DeleteFile(repositoryName, fileObjectId, FileLocation.Metadata, "verify");
 
@@ -336,10 +306,12 @@ namespace GitLfs.Server.Caching.Controllers
             }
             catch (ErrorResponseException ex)
             {
+                this.logger.LogWarning(null, ex, $"Received a error response with message {ex.Message} for {fileObjectId}");
                 return this.StatusCode(ex.StatusCode.Value, ex.ErrorResponse);
             }
             catch (StatusCodeException ex)
             {
+                this.logger.LogWarning(null, ex, $"Received a status code error with message {ex.Message} for {fileObjectId}");
                 return this.StatusCode(ex.StatusCode.Value, new ErrorResponse { Message = ex.Message });
             }
         }
