@@ -1,4 +1,4 @@
-﻿// <copyright file="FileCachingLfsClient.cs" company="Glenn Watson">
+﻿﻿// <copyright file="FileCachingLfsClient.cs" company="Glenn Watson">
 //    Copyright (C) 2017. Glenn Watson
 // </copyright>
 
@@ -70,7 +70,7 @@ namespace GitLfs.Client
 
                 this.logger.LogInformation(
                     $"Now saving to a file {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}\"");
-                string fileName = this.fileManager.SaveFile(
+                string fileName = await this.fileManager.SaveFileAsync(
                     repositoryName,
                     objectId,
                     FileLocation.Permenant,
