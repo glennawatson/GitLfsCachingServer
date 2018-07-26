@@ -55,6 +55,17 @@ namespace GitLfs.Core.File
         string SaveFile(string repositoryName, ObjectId objectId, FileLocation location, Stream contents, string suffix = null);
 
         /// <summary>
+        /// Returns a stream that will save to the local file store as it is read.
+        /// </summary>
+        /// <param name="repositoryName">The name of the repository.</param>
+        /// <param name="objectId">The object id of the stream.</param>
+        /// <param name="location">Location of the file.</param>
+        /// <param name="contents">The contents of the file.</param>
+        /// <param name="suffix">Suffix to add to the file name.</param>
+        /// <returns>The file name.</returns>
+        Stream SaveFile(out string fileName, string repositoryName, ObjectId objectId, FileLocation location, Stream contents, string suffix = null);
+
+        /// <summary>
         /// Saves a file in the local file store.
         /// </summary>
         /// <param name="repositoryName">The name of the repository.</param>

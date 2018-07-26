@@ -8,7 +8,7 @@ namespace GitLfs.Client
     using System.IO;
     using System.Net.Http;
     using System.Net.Http.Headers;
-    using System.Threading.Tasks;
+		using System.Threading.Tasks;
 
     using GitLfs.Core;
     using GitLfs.Core.BatchRequest;
@@ -55,31 +55,25 @@ namespace GitLfs.Client
             ObjectId objectId,
             BatchObjectAction action)
         {
-            using (var httpClient = new HttpClient())
-            {
-                SetClientHeaders(action, httpClient);
+			using (var httpClient = new HttpClient())
+			{
+				SetClientHeaders(action, httpClient);
 
-                this.logger.LogInformation(
-                    $"Download from {action.HRef} with repository name {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}");
-                HttpResponseMessage result = await httpClient.GetAsync(action.HRef);
+				this.logger.LogInformation(
+						$"Download from {action.HRef} with repository name {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}");
+				HttpResponseMessage result = await httpClient.GetAsync(action.HRef, HttpCompletionOption.ResponseHeadersRead);
 
-                if (result.IsSuccessStatusCode == false)
-                {
-                    await this.HandleError(result);
-                }
+				if (result.IsSuccessStatusCode == false)
+				{
+					await this.HandleError(result);
+				}
 
-                this.logger.LogInformation(
-                    $"Now saving to a file {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}\"");
-                string fileName = await this.fileManager.SaveFileAsync(
-                    repositoryName,
-                    objectId,
-                    FileLocation.Permenant,
-                    await result.Content.ReadAsStreamAsync());
-                this.logger.LogInformation(
-                    $"Saved to file {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}\"");
+				this.logger.LogInformation(
+					$"Now saving to a file {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}\"");
 
-                return new FileStream(fileName, FileMode.Open, FileAccess.Read);
-            }
+				return this.fileManager.SaveFile(out string fileName, repositoryName, objectId, FileLocation.Permenant,
+					await result.Content.ReadAsStreamAsync());
+			}
         }
 
         /// <inheritdoc />
