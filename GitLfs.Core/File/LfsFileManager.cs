@@ -101,6 +101,23 @@ namespace GitLfs.Core.File
         }
 
         /// <inheritdoc />
+        public Stream SaveFile(out string fileName, string repositoryName, ObjectId objectId, FileLocation location, Stream contents, string suffix = null)
+        {
+            Tuple<string, string> temporaryPath = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+
+            try
+            {
+                Directory.CreateDirectory(temporaryPath.Item1);
+                fileName = temporaryPath.Item2;
+								return new CachingStream(contents, temporaryPath.Item2);
+            }
+            catch (IOException ex)
+            {
+                throw new ErrorResponseException(new Error.ErrorResponse() { Message = ex.Message }, 500);
+            }
+        }
+
+        /// <inheritdoc />
         public async Task<string> SaveFileAsync(string repositoryName, ObjectId objectId, FileLocation location, string contents, string suffix = null)
         {
             Tuple<string, string> temporaryPath = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);

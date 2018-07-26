@@ -60,8 +60,8 @@ namespace GitLfs.Client
                 SetClientHeaders(action, httpClient);
 
                 this.logger.LogInformation(
-                    $"Download from {action.HRef} with repository name {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}");
-                HttpResponseMessage result = await httpClient.GetAsync(action.HRef);
+                        $"Download from {action.HRef} with repository name {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}");
+                HttpResponseMessage result = await httpClient.GetAsync(action.HRef, HttpCompletionOption.ResponseHeadersRead);
 
                 if (result.IsSuccessStatusCode == false)
                 {
@@ -70,17 +70,11 @@ namespace GitLfs.Client
 
                 this.logger.LogInformation(
                     $"Now saving to a file {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}\"");
-                string fileName = await this.fileManager.SaveFileAsync(
-                    repositoryName,
-                    objectId,
-                    FileLocation.Permenant,
-                    await result.Content.ReadAsStreamAsync());
-                this.logger.LogInformation(
-                    $"Saved to file {repositoryName}, request:{objectId.Hash.Substring(0, 10)}/{objectId.Size}\"");
 
-                return new FileStream(fileName, FileMode.Open, FileAccess.Read);
+                return this.fileManager.SaveFile(out string fileName, repositoryName, objectId, FileLocation.Permenant,
+                    await result.Content.ReadAsStreamAsync());
             }
-        }
+		}
 
         /// <inheritdoc />
         public async Task<BatchTransfer> RequestBatch(GitHost host, string repositoryName, BatchRequest request)
