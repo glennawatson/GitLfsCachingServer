@@ -12,6 +12,11 @@ If the command is a LFS based it will check the local server first for the cache
 
 This is useful in the cases where you have limited bandwidth or you want to reduce the amount of used GIT LFS data on GIT providers such as GitHub where GIT LFS has a quota.
 
+## How is authentication handled
+The server itself has some basic settings protected by ASP.Net Identities. This is meant only as token protection and not meant for robust server environments. This tool is meant for a local development team use only where you trust each other.
+
+The GIT authentication is the same as the server. The code just does a forwarding proxy where all the headers are passed through to the server, so users should use their credentials as they are on the remote server.
+
 ## How do I compile?
 1. [Install Docker](https://www.docker.com/products/docker-desktop)
 2. Open Visual Studio 2017
