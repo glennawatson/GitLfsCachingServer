@@ -1,6 +1,7 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="LfsFileManager.cs" company="Glenn Watson">
-//     Copyright (C) 2017. Glenn Watson
+// Copyright (c) 2018 Glenn Watson. All rights reserved.
+// See LICENSE file in the project root for full license information.
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
@@ -9,10 +10,10 @@ namespace GitLfs.Core.File
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Threading.Tasks;
-
-    using Microsoft.AspNetCore.Hosting;
     using System.Text;
+    using System.Threading.Tasks;
+    using GitLfs.Core.ErrorHandling;
+    using Microsoft.AspNetCore.Hosting;
 
     /// <summary>
     /// Manages the files inside a LFS store.
@@ -23,14 +24,14 @@ namespace GitLfs.Core.File
         private static readonly IDictionary<FileLocation, string> Prefixes = new Dictionary<FileLocation, string>
                                                                                  {
                                                                                      { FileLocation.Temporary, "temp" },
-                                                                                     { FileLocation.Permenant, "perm" },
+                                                                                     { FileLocation.Permanent, "perm" },
                                                                                      { FileLocation.Metadata, "meta" }
                                                                                  };
 
         private readonly IHostingEnvironment hostingEnvironment;
 
         /// <summary>
-        /// Initializes a new instance of the LfsFileManager class.
+        /// Initializes a new instance of the <see cref="LfsFileManager"/> class.
         /// </summary>
         /// <param name="hostingEnvironment">Details about the hosting environment.</param>
         public LfsFileManager(IHostingEnvironment hostingEnvironment)
@@ -43,7 +44,7 @@ namespace GitLfs.Core.File
         {
             try
             {
-                if (this.IsFileStored(repositoryName, objectId, location, false, suffix) == false)
+                if (!this.IsFileStored(repositoryName, objectId, location, false, suffix))
                 {
                     return null;
                 }
@@ -53,7 +54,7 @@ namespace GitLfs.Core.File
             }
             catch (IOException ex)
             {
-                throw new ErrorResponseException(new Error.ErrorResponse() { Message = ex.Message }, 500);
+                throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
             }
         }
 
@@ -62,172 +63,169 @@ namespace GitLfs.Core.File
         {
             using (var streamer = new StreamReader(this.GetFileStream(repositoryName, objectId, location, suffix)))
             {
-                return await streamer.ReadToEndAsync();
+                return await streamer.ReadToEndAsync().ConfigureAwait(false);
             }
         }
 
         /// <inheritdoc />
         public string GetFilePath(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null)
         {
-            if (this.IsFileStored(repositoryName, objectId, location, false, suffix) == false)
+            if (!this.IsFileStored(repositoryName, objectId, location, false, suffix))
             {
                 return null;
             }
 
-            string path = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix).Item2;
-            return path;
+            return this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix).Item2;
         }
 
         /// <inheritdoc />
         public string SaveFile(string repositoryName, ObjectId objectId, FileLocation location, Stream contents, string suffix = null)
         {
-            Tuple<string, string> temporaryPath = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+            var (directory, fileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
 
             try
             {
-                Directory.CreateDirectory(temporaryPath.Item1);
+                Directory.CreateDirectory(directory);
 
-                using (FileStream fileStream = new FileStream(temporaryPath.Item2, FileMode.Create, FileAccess.Write))
+                using (FileStream fileStream = new FileStream(fileName, FileMode.Create, FileAccess.Write))
                 {
                     contents.CopyTo(fileStream);
 
-                    return temporaryPath.Item2;
+                    return fileName;
                 }
             }
             catch (IOException ex)
             {
-                throw new ErrorResponseException(new Error.ErrorResponse() { Message = ex.Message }, 500);
+                throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
             }
         }
 
         /// <inheritdoc />
         public Stream SaveFile(out string fileName, string repositoryName, ObjectId objectId, FileLocation location, Stream contents, string suffix = null)
         {
-            Tuple<string, string> temporaryPath = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+            var (directory, inputFileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
 
             try
             {
-                Directory.CreateDirectory(temporaryPath.Item1);
-                fileName = temporaryPath.Item2;
-								return new CachingStream(contents, temporaryPath.Item2);
+                Directory.CreateDirectory(directory);
+                fileName = inputFileName;
+                return new CachingStream(contents, fileName);
             }
             catch (IOException ex)
             {
-                throw new ErrorResponseException(new Error.ErrorResponse() { Message = ex.Message }, 500);
+                throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
             }
         }
 
         /// <inheritdoc />
         public async Task<string> SaveFileAsync(string repositoryName, ObjectId objectId, FileLocation location, string contents, string suffix = null)
         {
-            Tuple<string, string> temporaryPath = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+            var (directory, fileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
 
             try
             {
-                Directory.CreateDirectory(temporaryPath.Item1);
+                Directory.CreateDirectory(directory);
 
-                using (StreamWriter fileStream = new StreamWriter(new FileStream(temporaryPath.Item2, FileMode.Create, FileAccess.Write)))
+                using (StreamWriter fileStream = new StreamWriter(new FileStream(fileName, FileMode.Create, FileAccess.Write)))
                 {
-                    await fileStream.WriteAsync(contents);
+                    await fileStream.WriteAsync(contents).ConfigureAwait(false);
 
-                    return temporaryPath.Item2;
+                    return fileName;
                 }
             }
             catch (IOException ex)
             {
-                throw new ErrorResponseException(new Error.ErrorResponse() { Message = ex.Message }, 500);
+                throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
             }
         }
 
         /// <inheritdoc />
         public async Task<string> SaveFileAsync(string repositoryName, ObjectId objectId, FileLocation location, Stream contents, string suffix = null)
         {
-            Tuple<string, string> temporaryPath = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+            var (directory, fileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
 
             try
             {
-                Directory.CreateDirectory(temporaryPath.Item1);
+                Directory.CreateDirectory(directory);
 
-                using (FileStream fileStream = new FileStream(temporaryPath.Item2, FileMode.Create, FileAccess.Write))
+                using (FileStream fileStream = new FileStream(fileName, FileMode.Create, FileAccess.Write))
                 {
-                    await contents.CopyToAsync(fileStream);
+                    await contents.CopyToAsync(fileStream).ConfigureAwait(false);
 
-                    return temporaryPath.Item2;
+                    return fileName;
                 }
             }
             catch (IOException ex)
             {
-                throw new ErrorResponseException(new Error.ErrorResponse() { Message = ex.Message }, 500);
+                throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
             }
         }
 
         /// <inheritdoc />
         public void DeleteFile(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null)
         {
-            Tuple<string, string> path = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+            var (directory, fileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
 
-            if (File.Exists(path.Item2) == false)
+            if (!File.Exists(fileName))
             {
                 return;
             }
 
             try
             {
-                File.Delete(path.Item2);
+                File.Delete(fileName);
 
-                CleanDirectoryIfEmpty(path.Item1);
+                CleanDirectoryIfEmpty(directory);
             }
             catch (IOException ex)
             {
-                throw new ErrorResponseException(new Error.ErrorResponse() { Message = ex.Message }, 500);
+                throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
             }
-
         }
 
         /// <inheritdoc />
-        public void MoveFile(string repositoryName, ObjectId objectId, FileLocation from, FileLocation to, string suffix = null)
+        public void MoveFile(string repositoryName, ObjectId objectId, FileLocation fromFileLocation, FileLocation toFileLocation, string suffix = null)
         {
-            Tuple<string, string> temporaryPath = this.GetDirectoriesAndFileNames(repositoryName, objectId, from, suffix);
-            Tuple<string, string> permenantPath = this.GetDirectoriesAndFileNames(repositoryName, objectId, to, suffix);
+            var (tempDirectory, tempFileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, fromFileLocation, suffix);
+            var (permanentDirectory, permanentFileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, toFileLocation, suffix);
 
             try
             {
-                Directory.CreateDirectory(permenantPath.Item1);
+                Directory.CreateDirectory(permanentDirectory);
 
-                if (File.Exists(permenantPath.Item2))
+                if (File.Exists(permanentDirectory))
                 {
                     return;
                 }
 
-                File.Move(temporaryPath.Item2, permenantPath.Item2);
+                File.Move(tempFileName, permanentFileName);
 
-                CleanDirectoryIfEmpty(temporaryPath.Item1);
+                CleanDirectoryIfEmpty(tempDirectory);
             }
             catch (IOException ex)
             {
-                throw new ErrorResponseException(new Error.ErrorResponse { Message = ex.Message }, 500);
+                throw new ErrorResponseException(new ErrorResponse { Message = ex.Message }, 500);
             }
-
         }
 
         /// <inheritdoc />
         public bool IsFileStored(string repositoryName, ObjectId objectId, FileLocation location, bool matchSize = false, string suffix = null)
         {
-            Tuple<string, string> paths = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+            var (directory, fileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
 
-            if (Directory.Exists(paths.Item1) == false)
+            if (!Directory.Exists(directory))
             {
                 return false;
             }
 
-            if (File.Exists(paths.Item2) == false)
+            if (!File.Exists(fileName))
             {
                 return false;
             }
 
             if (matchSize)
             {
-                var fileInfo = new FileInfo(paths.Item2);
+                var fileInfo = new FileInfo(fileName);
 
                 if (fileInfo.Length != objectId.Size)
                 {
@@ -241,19 +239,19 @@ namespace GitLfs.Core.File
         /// <inheritdoc />
         public long GetFileSize(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null)
         {
-            Tuple<string, string> paths = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+            var (directory, fileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
 
-            if (Directory.Exists(paths.Item1) == false)
+            if (!Directory.Exists(directory))
             {
                 return 0;
             }
 
-            if (File.Exists(paths.Item2) == false)
+            if (!File.Exists(fileName))
             {
                 return 0;
             }
 
-            return new FileInfo(paths.Item2).Length;
+            return new FileInfo(fileName).Length;
         }
 
         private static void CleanDirectoryIfEmpty(string path)
@@ -275,7 +273,7 @@ namespace GitLfs.Core.File
             }
         }
 
-        private Tuple<string, string> GetDirectoriesAndFileNames(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null)
+        private (string directory, string fileName) GetDirectoriesAndFileNames(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null)
         {
             string repositoryRoot = Path.Combine(this.hostingEnvironment.ContentRootPath, DirectoryPrefix);
 
@@ -292,7 +290,7 @@ namespace GitLfs.Core.File
                 fileName.Append($"-{suffix}");
             }
 
-            return Tuple.Create(secondDirectory, fileName.ToString());
+            return (secondDirectory, fileName.ToString());
         }
     }
 }

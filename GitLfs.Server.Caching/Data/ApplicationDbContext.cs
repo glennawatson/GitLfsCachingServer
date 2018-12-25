@@ -1,12 +1,14 @@
 ﻿// <copyright file="ApplicationDbContext.cs" company="Glenn Watson">
-//    Copyright (C) 2017. Glenn Watson
+// Copyright (c) 2018 Glenn Watson. All rights reserved.
+// See LICENSE file in the project root for full license information.
 // </copyright>
 
 namespace GitLfs.Server.Caching.Data
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
     using GitLfs.Core;
-    using GitLfs.Server.Caching.Models;
-
     using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore;
 
@@ -14,10 +16,10 @@ namespace GitLfs.Server.Caching.Data
     /// The main database context for the application. Includes all the authentication
     /// data in the base class.
     /// </summary>
-    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+    public class ApplicationDbContext : IdentityDbContext
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="T:GitLfs.Server.Caching.Data.ApplicationDbContext" /> class.
+        /// Initializes a new instance of the <see cref="ApplicationDbContext"/> class.
         /// </summary>
         /// <param name="options">The options to use when generating the database..</param>
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)

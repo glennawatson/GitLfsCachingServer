@@ -1,11 +1,13 @@
 ﻿// <copyright file="JsonBatchTransferSerialiser.cs" company="Glenn Watson">
-//    Copyright (C) 2017. Glenn Watson
+// Copyright (c) 2018 Glenn Watson. All rights reserved.
+// See LICENSE file in the project root for full license information.
 // </copyright>
 
 namespace GitLfs.Core.BatchResponse
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
 
     using Newtonsoft.Json;
@@ -21,16 +23,17 @@ namespace GitLfs.Core.BatchResponse
         {
             JObject objectValue = JObject.Parse(value);
 
-            return this.ProcessBatchObjectActionJson(objectValue.First as JProperty);
+            return ProcessBatchObjectActionJson(objectValue.First as JProperty);
         }
 
         /// <inheritdoc />
-        public BatchObject ObjectFromString(string json)
+        public BatchObject ObjectFromString(string value)
         {
-            return this.ProcessBatchObjectJson(JObject.Parse(json));
+            return this.ProcessBatchObjectJson(JObject.Parse(value));
         }
 
         /// <inheritdoc />
+        [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "Needed by LFS standard.")]
         public string ToString(BatchTransfer transfer)
         {
             var jsonTransfer = new JObject { ["transfer"] = transfer.Mode.ToString().ToLowerInvariant() };
@@ -39,7 +42,7 @@ namespace GitLfs.Core.BatchResponse
 
             jsonTransfer["objects"] = objectItemsToken;
 
-            foreach (BatchObject objectValue in transfer.Objects)
+            foreach (BatchObject objectValue in transfer.Objects.Cast<BatchObject>())
             {
                 objectItemsToken.Add(this.ProcessBatchObject(objectValue));
             }
@@ -56,17 +59,20 @@ namespace GitLfs.Core.BatchResponse
         /// <inheritdoc />
         public string ToString(BatchObjectAction batchObjectAction)
         {
-            JObject outterObject = new JObject();
-            outterObject.Add(this.ProcessBatchObjectAction(batchObjectAction));
-            return outterObject.ToString();
+            JObject outerObject = new JObject
+            {
+                this.ProcessBatchObjectAction(batchObjectAction)
+            };
+
+            return outerObject.ToString();
         }
 
         /// <inheritdoc />
-        public BatchTransfer TransferFromString(string json)
+        public BatchTransfer TransferFromString(string value)
         {
             var transfer = new BatchTransfer { Objects = new List<IBatchObject>() };
 
-            JObject jsonObject = JObject.Parse(json);
+            JObject jsonObject = JObject.Parse(value);
 
             if (Enum.TryParse((string)jsonObject["transfer"], true, out TransferMode mode))
             {
@@ -75,16 +81,14 @@ namespace GitLfs.Core.BatchResponse
 
             foreach (JToken item in jsonObject["objects"])
             {
-                IBatchObject batchObject = new BatchObject();
+                IBatchObject batchObject;
                 if (item["error"] != null)
                 {
-                    var batchObjectError =
-                        new BatchObjectError
+                    batchObject = new BatchObjectError
                         {
                             ErrorCode = (int)item["error"]["code"],
                             ErrorMessage = (string)item["error"]["message"]
                         };
-                    batchObject = batchObjectError;
                 }
                 else
                 {
@@ -97,6 +101,36 @@ namespace GitLfs.Core.BatchResponse
             }
 
             return transfer;
+        }
+
+        private static BatchObjectAction ProcessBatchObjectActionJson(JProperty actionToken)
+        {
+            var action = new BatchObjectAction();
+            if (!Enum.TryParse(actionToken.Name, true, out BatchActionMode actionMode))
+            {
+                throw new ParseException("Invalid action mode.");
+            }
+
+            action.Mode = actionMode;
+            action.HRef = (string)actionToken.Value["href"];
+            action.ExpiresAt = (DateTime?)actionToken.Value["expires_at"];
+            action.ExpiresIn = (int?)actionToken.Value["expires_in"];
+
+            if (actionToken.Value["header"] is JObject headerToken)
+            {
+                var headers = new List<BatchHeader>();
+
+                foreach (JProperty headerPair in headerToken.Cast<JProperty>())
+                {
+                    string key = headerPair.Name;
+                    var value = (string)headerPair.Value;
+                    headers.Add(new BatchHeader(key, value));
+                }
+
+                action.Headers = headers;
+            }
+
+            return action;
         }
 
         private JObject ProcessBatchObject(BatchObject objectValue)
@@ -120,6 +154,7 @@ namespace GitLfs.Core.BatchResponse
             return objectToken;
         }
 
+        [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "Needed by LFS standard.")]
         private JProperty ProcessBatchObjectAction(BatchObjectAction action)
         {
             var actionContents = new JObject { new JProperty("href", action.HRef) };
@@ -146,15 +181,12 @@ namespace GitLfs.Core.BatchResponse
                 actionContents.Add(new JProperty("expires_at", action.ExpiresAt.Value.ToUniversalTime()));
             }
 
-            var actionToken = new JProperty(action.Mode.ToString().ToLowerInvariant(), actionContents);
-
-            return actionToken;
+            return new JProperty(action.Mode.ToString().ToLowerInvariant(), actionContents);
         }
 
         private BatchObject ProcessBatchObjectJson(JToken item)
         {
-            var batchObjectFile = new BatchObject();
-            batchObjectFile.Authenticated = (bool?)item["authenticated"];
+            var batchObjectFile = new BatchObject { Authenticated = (bool?)item["authenticated"] };
 
             JToken actionsToken = item["actions"];
 
@@ -169,37 +201,6 @@ namespace GitLfs.Core.BatchResponse
             }
 
             return batchObjectFile;
-        }
-
-        private BatchObjectAction ProcessBatchObjectActionJson(JProperty actionToken)
-        {
-            var action = new BatchObjectAction();
-            if (Enum.TryParse(actionToken.Name, true, out BatchActionMode actionMode) == false)
-            {
-                throw new ParseException("Invalid action mode.");
-            }
-
-            action.Mode = actionMode;
-            action.HRef = (string)actionToken.Value["href"];
-            action.ExpiresAt = (DateTime?)actionToken.Value["expires_at"];
-            action.ExpiresIn = (int?)actionToken.Value["expires_in"];
-            var headerToken = actionToken.Value["header"] as JObject;
-
-            if (headerToken != null)
-            {
-                var headers = new List<BatchHeader>();
-
-                foreach (JProperty headerPair in headerToken.Cast<JProperty>())
-                {
-                    string key = headerPair.Name;
-                    var value = (string)headerPair.Value;
-                    headers.Add(new BatchHeader(key, value));
-                }
-
-                action.Headers = headers;
-            }
-
-            return action;
         }
     }
 }

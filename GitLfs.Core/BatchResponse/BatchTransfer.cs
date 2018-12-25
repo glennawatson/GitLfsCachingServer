@@ -1,5 +1,6 @@
 ﻿// <copyright file="BatchTransfer.cs" company="Glenn Watson">
-//    Copyright (C) 2017. Glenn Watson
+// Copyright (c) 2018 Glenn Watson. All rights reserved.
+// See LICENSE file in the project root for full license information.
 // </copyright>
 
 namespace GitLfs.Core.BatchResponse
@@ -12,12 +13,12 @@ namespace GitLfs.Core.BatchResponse
     public class BatchTransfer
     {
         /// <summary>
-        /// The mode of the transfer.
+        /// Gets or sets the mode of the transfer.
         /// </summary>
         public TransferMode? Mode { get; set; }
 
         /// <summary>
-        /// Gets the objects of the transfer.
+        /// Gets or sets the objects of the transfer.
         /// </summary>
         public IList<IBatchObject> Objects { get; set; }
     }

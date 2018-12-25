@@ -1,5 +1,6 @@
 ﻿// <copyright file="StatusCodeException.cs" company="Glenn Watson">
-//    Copyright (C) 2017. Glenn Watson
+// Copyright (c) 2018 Glenn Watson. All rights reserved.
+// See LICENSE file in the project root for full license information.
 // </copyright>
 
 namespace GitLfs.Core
@@ -12,7 +13,7 @@ namespace GitLfs.Core
     public class StatusCodeException : LfsException
     {
         /// <summary>
-        /// Initializes a new instance of the ClientException class.
+        /// Initializes a new instance of the <see cref="StatusCodeException"/> class.
         /// </summary>
         /// <param name="statusCode">The error status code to show.</param>
         /// <param name="message">A human friendly message.</param>
@@ -23,7 +24,7 @@ namespace GitLfs.Core
         }
 
         /// <summary>
-        /// Initializes a new instance of the ClientException class.
+        /// Initializes a new instance of the <see cref="StatusCodeException"/> class.
         /// </summary>
         /// <param name="statusCode">The error status code to show.</param>
         /// <param name="message">A human friendly message.</param>

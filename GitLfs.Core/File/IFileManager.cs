@@ -1,6 +1,7 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="IFileManager.cs" company="Glenn Watson">
-//     Copyright (C) 2017. Glenn Watson
+// Copyright (c) 2018 Glenn Watson. All rights reserved.
+// See LICENSE file in the project root for full license information.
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 namespace GitLfs.Core.File
@@ -14,7 +15,7 @@ namespace GitLfs.Core.File
     public interface IFileManager
     {
         /// <summary>
-        /// Gets the stream for a particular file. 
+        /// Gets the stream for a particular file.
         /// </summary>
         /// <param name="repositoryName">The name of the repository.</param>
         /// <param name="objectId">The object id of the stream.</param>
@@ -24,7 +25,7 @@ namespace GitLfs.Core.File
         Stream GetFileStream(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null);
 
         /// <summary>
-        /// Gets the string contents for a particular file. 
+        /// Gets the string contents for a particular file.
         /// </summary>
         /// <param name="repositoryName">The name of the repository.</param>
         /// <param name="objectId">The object id of the stream.</param>
@@ -34,7 +35,7 @@ namespace GitLfs.Core.File
         Task<string> GetFileContentsAsync(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null);
 
         /// <summary>
-        /// Gets the fiel path for a particular file. 
+        /// Gets the file path for a particular file.
         /// </summary>
         /// <param name="repositoryName">The name of the repository.</param>
         /// <param name="objectId">The object id of the stream.</param>
@@ -57,6 +58,7 @@ namespace GitLfs.Core.File
         /// <summary>
         /// Returns a stream that will save to the local file store as it is read.
         /// </summary>
+        /// <param name="fileName">The file name to save. This is passed out.</param>
         /// <param name="repositoryName">The name of the repository.</param>
         /// <param name="objectId">The object id of the stream.</param>
         /// <param name="location">Location of the file.</param>
@@ -92,10 +94,10 @@ namespace GitLfs.Core.File
         /// </summary>
         /// <param name="repositoryName">The Repository name.</param>
         /// <param name="objectId">The Object identifier.</param>
-        /// <param name="from">The location where the move the file from.</param>
-        /// <param name="to">The location to move the file to.</param>
+        /// <param name="fromFileLocation">The location where the move the file from.</param>
+        /// <param name="toFileLocation">The location to move the file to.</param>
         /// <param name="suffix">Suffix to add to the file name.</param>
-        void MoveFile(string repositoryName, ObjectId objectId, FileLocation from, FileLocation to, string suffix = null);
+        void MoveFile(string repositoryName, ObjectId objectId, FileLocation fromFileLocation, FileLocation toFileLocation, string suffix = null);
 
         /// <summary>
         /// Deletes the file.
@@ -107,11 +109,12 @@ namespace GitLfs.Core.File
         void DeleteFile(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null);
 
         /// <summary>
-        /// Is the the file stored in storage?
+        /// Determines if the file is in storage.
         /// </summary>
         /// <param name="repositoryName">The name of the repository.</param>
         /// <param name="objectId">The object id of the stream.</param>
         /// <param name="location">Location of the file.</param>
+        /// <param name="matchSize">Determine the match based on matching the size.</param>
         /// <param name="suffix">Suffix to add to the file name.</param>
         /// <returns><c>true</c>, if file stored in storage, <c>false</c> otherwise.</returns>
         bool IsFileStored(string repositoryName, ObjectId objectId, FileLocation location, bool matchSize = false, string suffix = null);

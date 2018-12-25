@@ -1,17 +1,19 @@
-// <copyright file="GitHostsController.cs" company="Glenn Watson">
-//    Copyright (C) 2017. Glenn Watson
+﻿// <copyright file="GitHostsController.cs" company="Glenn Watson">
+// Copyright (c) 2018 Glenn Watson. All rights reserved.
+// See LICENSE file in the project root for full license information.
 // </copyright>
 
 namespace GitLfs.Server.Caching.Controllers
 {
+    using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-
     using GitLfs.Core;
     using GitLfs.Server.Caching.Data;
-
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
+    using Microsoft.AspNetCore.Mvc.Rendering;
     using Microsoft.EntityFrameworkCore;
 
     /// <summary>
@@ -23,7 +25,7 @@ namespace GitLfs.Server.Caching.Controllers
         private readonly ApplicationDbContext context;
 
         /// <summary>
-        /// Initializes a new instance of the GitHostsController class.
+        /// Initializes a new instance of the <see cref="GitHostsController"/> class.
         /// </summary>
         /// <param name="context">The database context to allow changing of the database.</param>
         public GitHostsController(ApplicationDbContext context)
@@ -32,9 +34,39 @@ namespace GitLfs.Server.Caching.Controllers
         }
 
         /// <summary>
-        /// Creates a new view for creating a GitHost object.
+        /// Shows the main view where it lists the GitHost objects in the Database.
         /// </summary>
-        /// <returns>A action to monitor the progress.</returns>
+        /// <returns>The result of the action.</returns>
+        public async Task<IActionResult> Index()
+        {
+            return this.View(await this.context.GitHost.ToListAsync().ConfigureAwait(false));
+        }
+
+        /// <summary>
+        /// Brings up the details about a git host.
+        /// </summary>
+        /// <param name="id">The ID of the git host to bring up.</param>
+        /// <returns>The result of the action.</returns>
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null)
+            {
+                return this.NotFound();
+            }
+
+            var gitHost = await this.context.GitHost.FirstOrDefaultAsync(m => m.Id == id).ConfigureAwait(false);
+            if (gitHost == null)
+            {
+                return this.NotFound();
+            }
+
+            return this.View(gitHost);
+        }
+
+        /// <summary>
+        /// Starts the creation of a new git host value.
+        /// </summary>
+        /// <returns>The result of the action.</returns>
         public IActionResult Create()
         {
             return this.View();
@@ -42,27 +74,86 @@ namespace GitLfs.Server.Caching.Controllers
 
         /// <summary>
         /// Creates a new GitHost.
-        /// To protect from overposting attacks, please enable the specific properties you want to bind to, for
+        /// To protect from over-posting attacks, please enable the specific properties you want to bind to, for
         /// more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         /// </summary>
         /// <param name="gitHost">The new GitHost object to create.</param>
         /// <returns>A action result with the status.</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Href,Name,UserName,Token")] GitHost gitHost)
+        public async Task<IActionResult> Create([Bind("Href,Id,Name,Token,UserName")] GitHost gitHost)
         {
             if (this.ModelState.IsValid)
             {
                 this.context.Add(gitHost);
-                await this.context.SaveChangesAsync();
-                return this.RedirectToAction("Index");
+                await this.context.SaveChangesAsync().ConfigureAwait(false);
+                return this.RedirectToAction(nameof(this.Index));
             }
 
             return this.View(gitHost);
         }
 
         /// <summary>
-        /// Deltes a GitHost object from the database with the specified ID.
+        /// Edits the specified git host with the provided values.
+        /// </summary>
+        /// <param name="id">The id of the host to edit.</param>
+        /// <returns>The result of the action.</returns>
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
+                return this.NotFound();
+            }
+
+            var gitHost = await this.context.GitHost.FindAsync(id).ConfigureAwait(false);
+            if (gitHost == null)
+            {
+                return this.NotFound();
+            }
+
+            return this.View(gitHost);
+        }
+
+        /// <summary>
+        /// Edits the specified git host with the provided values.
+        /// </summary>
+        /// <param name="id">The id of the host to edit.</param>
+        /// <param name="gitHost">The values of the new git host values.</param>
+        /// <returns>The result of the action.</returns>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, [Bind("Href,Id,Name,Token,UserName")] GitHost gitHost)
+        {
+            if (id != gitHost.Id)
+            {
+                return this.NotFound();
+            }
+
+            if (this.ModelState.IsValid)
+            {
+                try
+                {
+                    this.context.Update(gitHost);
+                    await this.context.SaveChangesAsync().ConfigureAwait(false);
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!this.GitHostExists(gitHost.Id))
+                    {
+                        return this.NotFound();
+                    }
+
+                    throw;
+                }
+
+                return this.RedirectToAction(nameof(this.Index));
+            }
+
+            return this.View(gitHost);
+        }
+
+        /// <summary>
+        /// Deletes a GitHost object from the database with the specified ID.
         /// </summary>
         /// <param name="id">The ID to delete.</param>
         /// <returns>A action result to monitor the progress.</returns>
@@ -73,7 +164,8 @@ namespace GitLfs.Server.Caching.Controllers
                 return this.NotFound();
             }
 
-            GitHost gitHost = await this.context.GitHost.SingleOrDefaultAsync(m => m.Id == id);
+            var gitHost = await this.context.GitHost
+                .FirstOrDefaultAsync(m => m.Id == id).ConfigureAwait(false);
             if (gitHost == null)
             {
                 return this.NotFound();
@@ -92,96 +184,10 @@ namespace GitLfs.Server.Caching.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            GitHost gitHost = await this.context.GitHost.SingleOrDefaultAsync(m => m.Id == id);
+            var gitHost = await this.context.GitHost.FindAsync(id).ConfigureAwait(false);
             this.context.GitHost.Remove(gitHost);
-            await this.context.SaveChangesAsync();
-            return this.RedirectToAction("Index");
-        }
-
-        /// <summary>
-        /// Shows a view with the details of the specified GitHost id.
-        /// </summary>
-        /// <param name="id">The ID to get the details for.</param>
-        /// <returns>A task to monitor the progress.</returns>
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
-            {
-                return this.NotFound();
-            }
-
-            GitHost gitHost = await this.context.GitHost.SingleOrDefaultAsync(m => m.Id == id);
-            if (gitHost == null)
-            {
-                return this.NotFound();
-            }
-
-            return this.View(gitHost);
-        }
-
-        /// <summary>
-        /// Allows editing of the specified GitHost using the specified ID.
-        /// </summary>
-        /// <param name="id">The ID of the GitHost object.</param>
-        /// <returns>A action result to monitor the progress.</returns>
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return this.NotFound();
-            }
-
-            GitHost gitHost = await this.context.GitHost.SingleOrDefaultAsync(m => m.Id == id);
-            if (gitHost == null)
-            {
-                return this.NotFound();
-            }
-
-            return this.View(gitHost);
-        }
-
-        // POST: GitHosts/Edit/5
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Href,Name,UserName,Token")] GitHost gitHost)
-        {
-            if (id != gitHost.Id)
-            {
-                return this.NotFound();
-            }
-
-            if (this.ModelState.IsValid)
-            {
-                try
-                {
-                    this.context.Update(gitHost);
-                    await this.context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!this.GitHostExists(gitHost.Id))
-                    {
-                        return this.NotFound();
-                    }
-
-                    throw;
-                }
-
-                return this.RedirectToAction("Index");
-            }
-
-            return this.View(gitHost);
-        }
-
-        /// <summary>
-        /// Shows the main view where it lists the GitHost objects in the Database.
-        /// </summary>
-        /// <returns>A task to monitor the progress.</returns>
-        public async Task<IActionResult> Index()
-        {
-            return this.View(await this.context.GitHost.ToListAsync());
+            await this.context.SaveChangesAsync().ConfigureAwait(false);
+            return this.RedirectToAction(nameof(this.Index));
         }
 
         private bool GitHostExists(int id)

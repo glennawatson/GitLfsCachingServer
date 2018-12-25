@@ -1,5 +1,6 @@
 ﻿// <copyright file="IBatchTransferSerialiser.cs" company="Glenn Watson">
-//    Copyright (C) 2017. Glenn Watson
+// Copyright (c) 2018 Glenn Watson. All rights reserved.
+// See LICENSE file in the project root for full license information.
 // </copyright>
 
 namespace GitLfs.Core.BatchResponse
@@ -41,7 +42,7 @@ namespace GitLfs.Core.BatchResponse
         /// Converts a batch object action into a string.
         /// </summary>
         /// <returns>The string.</returns>
-        /// <param name="batchObject">Batch object action.</param>
+        /// <param name="batchObjectAction">The batch object action.</param>
         string ToString(BatchObjectAction batchObjectAction);
 
         /// <summary>

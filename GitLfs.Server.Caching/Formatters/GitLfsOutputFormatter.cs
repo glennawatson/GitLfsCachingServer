@@ -1,5 +1,6 @@
 ﻿// <copyright file="GitLfsOutputFormatter.cs" company="Glenn Watson">
-//    Copyright (C) 2017. Glenn Watson
+// Copyright (c) 2018 Glenn Watson. All rights reserved.
+// See LICENSE file in the project root for full license information.
 // </copyright>
 
 namespace GitLfs.Server.Caching.Formatters
@@ -8,11 +9,9 @@ namespace GitLfs.Server.Caching.Formatters
     using System.Reflection;
     using System.Text;
     using System.Threading.Tasks;
-
     using GitLfs.Core.BatchRequest;
     using GitLfs.Core.BatchResponse;
-    using GitLfs.Core.Error;
-
+    using GitLfs.Core.ErrorHandling;
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Mvc.Formatters;
     using Microsoft.Extensions.DependencyInjection;
@@ -24,7 +23,7 @@ namespace GitLfs.Server.Caching.Formatters
     public class GitLfsOutputFormatter : TextOutputFormatter
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="T:GitLfs.Server.Caching.Formatters.GitLfsOutputFormatter" /> class.
+        /// Initializes a new instance of the <see cref="GitLfsOutputFormatter"/> class.
         /// </summary>
         public GitLfsOutputFormatter()
         {
@@ -44,34 +43,32 @@ namespace GitLfs.Server.Caching.Formatters
             var transferSerialiser = serviceProvider.GetService<IBatchTransferSerialiser>();
             var responseSerialiser = serviceProvider.GetService<IErrorResponseSerialiser>();
 
-            var transfer = context.Object as BatchTransfer;
-
-            if (transfer != null)
+            switch (context.Object)
             {
-                string content = transferSerialiser.ToString(transfer);
+                case BatchTransfer transfer:
+                {
+                    string content = transferSerialiser.ToString(transfer);
 
-                return response.WriteAsync(content);
+                    return response.WriteAsync(content);
+                }
+
+                case BatchRequest request:
+                {
+                    string content = requestSerialiser.ToString(request);
+
+                    return response.WriteAsync(content);
+                }
+
+                case ErrorResponse errorResponse:
+                {
+                    string content = responseSerialiser.ToString(errorResponse);
+
+                    return response.WriteAsync(content);
+                }
+
+                default:
+                    return response.WriteAsync(string.Empty);
             }
-
-            var request = context.Object as BatchRequest;
-
-            if (request != null)
-            {
-                string content = requestSerialiser.ToString(request);
-
-                return response.WriteAsync(content);
-            }
-
-            var errorResponse = context.Object as ErrorResponse;
-
-            if (errorResponse != null)
-            {
-                string content = responseSerialiser.ToString(errorResponse);
-
-                return response.WriteAsync(content);
-            }
-
-            return response.WriteAsync(string.Empty);
         }
 
         /// <inheritdoc />

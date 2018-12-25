@@ -1,5 +1,6 @@
 ﻿// <copyright file="GitForwardingMiddleware.cs" company="Glenn Watson">
-//    Copyright (C) 2017. Glenn Watson
+// Copyright (c) 2018 Glenn Watson. All rights reserved.
+// See LICENSE file in the project root for full license information.
 // </copyright>
 
 namespace GitLfs.Server.Caching.Middleware
@@ -19,7 +20,10 @@ namespace GitLfs.Server.Caching.Middleware
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Primitives;
 
-    public class GitForwardingMiddleware
+    /// <summary>
+    /// A middleware that will forward GIT requests if they aren't related to LFS.
+    /// </summary>
+    public sealed class GitForwardingMiddleware : IDisposable
     {
         private readonly HttpClient httpClient;
 
@@ -36,18 +40,18 @@ namespace GitLfs.Server.Caching.Middleware
             this.httpClient = new HttpClient();
         }
 
-        public Task Invoke(HttpContext context)
-        {
-            return this.HandleHttpRequest(context);
-        }
-
-        private async Task HandleHttpRequest(HttpContext context)
+        /// <summary>
+        /// Helper method to invite values async.
+        /// </summary>
+        /// <param name="context">The context of the current session.</param>
+        /// <returns>A task to monitor the progress.</returns>
+        public async Task InvokeAsync(HttpContext context)
         {
             PathString path = context.Request.Path;
 
-            if (path.ToString().Contains("lfs"))
+            if (path.ToString().Contains("lfs", StringComparison.InvariantCulture))
             {
-                await this.next(context);
+                await this.next(context).ConfigureAwait(false);
                 return;
             }
 
@@ -55,25 +59,25 @@ namespace GitLfs.Server.Caching.Middleware
 
             Match match = matchCriteria.Match(context.Request.Path.ToString());
 
-            if (match.Success == false)
+            if (!match.Success)
             {
-                await this.next(context);
+                await this.next(context).ConfigureAwait(false);
                 return;
             }
 
             var dbContext = context.RequestServices.GetService<ApplicationDbContext>();
 
-            if (int.TryParse(match.Groups[1].Value, out int hostIndex) == false)
+            if (!int.TryParse(match.Groups[1].Value, out int hostIndex))
             {
-                await this.next(context);
+                await this.next(context).ConfigureAwait(false);
                 return;
             }
 
-            GitHost gitHost = await dbContext.GitHost.SingleOrDefaultAsync(x => x.Id == hostIndex);
+            GitHost gitHost = await dbContext.GitHost.SingleOrDefaultAsync(x => x.Id == hostIndex).ConfigureAwait(false);
 
             if (gitHost == null)
             {
-                await this.next(context);
+                await this.next(context).ConfigureAwait(false);
                 return;
             }
 
@@ -82,15 +86,13 @@ namespace GitLfs.Server.Caching.Middleware
             if (!HttpMethods.IsGet(requestMethod) && !HttpMethods.IsHead(requestMethod)
                 && !HttpMethods.IsDelete(requestMethod) && !HttpMethods.IsTrace(requestMethod))
             {
-                var streamContent = new StreamContent(context.Request.Body);
-                requestMessage.Content = streamContent;
+                requestMessage.Content = new StreamContent(context.Request.Body);
             }
 
             // Copy the request headers
             foreach (KeyValuePair<string, StringValues> header in context.Request.Headers)
             {
-                if (!requestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray())
-                    && requestMessage.Content != null)
+                if (!requestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray()))
                 {
                     requestMessage.Content?.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
                 }
@@ -106,7 +108,7 @@ namespace GitLfs.Server.Caching.Middleware
             using (HttpResponseMessage responseMessage = await this.httpClient.SendAsync(
                                                              requestMessage,
                                                              HttpCompletionOption.ResponseHeadersRead,
-                                                             context.RequestAborted))
+                                                             context.RequestAborted).ConfigureAwait(false))
             {
                 context.Response.StatusCode = (int)responseMessage.StatusCode;
                 foreach (KeyValuePair<string, IEnumerable<string>> header in responseMessage.Headers)
@@ -121,8 +123,14 @@ namespace GitLfs.Server.Caching.Middleware
 
                 // SendAsync removes chunking from the response. This removes the header so it doesn't expect a chunked response.
                 context.Response.Headers.Remove("transfer-encoding");
-                await responseMessage.Content.CopyToAsync(context.Response.Body);
+                await responseMessage.Content.CopyToAsync(context.Response.Body).ConfigureAwait(false);
             }
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            this.httpClient?.Dispose();
         }
     }
 }

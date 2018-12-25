@@ -1,5 +1,6 @@
 ﻿// <copyright file="GitLfsInputFormatter.cs" company="Glenn Watson">
-//    Copyright (C) 2017. Glenn Watson
+// Copyright (c) 2018 Glenn Watson. All rights reserved.
+// See LICENSE file in the project root for full license information.
 // </copyright>
 
 namespace GitLfs.Server.Caching.Formatters
@@ -9,12 +10,10 @@ namespace GitLfs.Server.Caching.Formatters
     using System.Reflection;
     using System.Text;
     using System.Threading.Tasks;
-
     using GitLfs.Core;
     using GitLfs.Core.BatchRequest;
     using GitLfs.Core.BatchResponse;
-    using GitLfs.Core.Error;
-
+    using GitLfs.Core.ErrorHandling;
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Mvc.Formatters;
     using Microsoft.Extensions.DependencyInjection;
@@ -26,7 +25,7 @@ namespace GitLfs.Server.Caching.Formatters
     public class GitLfsInputFormatter : TextInputFormatter
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="T:GitLfs.Server.Caching.Formatters.GitLfsInputFormatter" /> class.
+        /// Initializes a new instance of the <see cref="GitLfsInputFormatter"/> class.
         /// </summary>
         public GitLfsInputFormatter()
         {
@@ -61,29 +60,29 @@ namespace GitLfs.Server.Caching.Formatters
 
             using (var reader = new StreamReader(request.Body, encoding))
             {
-                string contents = await reader.ReadToEndAsync();
+                string contents = await reader.ReadToEndAsync().ConfigureAwait(false);
                 try
                 {
                     BatchRequest lfsRequest = requestSerialiser.FromString(contents);
-                    return await InputFormatterResult.SuccessAsync(lfsRequest);
+                    return await InputFormatterResult.SuccessAsync(lfsRequest).ConfigureAwait(false);
                 }
                 catch (ParseException)
                 {
                     try
                     {
                         ErrorResponse response = responseSerialiser.FromString(contents);
-                        return await InputFormatterResult.SuccessAsync(response);
+                        return await InputFormatterResult.SuccessAsync(response).ConfigureAwait(false);
                     }
                     catch
                     {
                         try
                         {
                             BatchTransfer transfer = transferSerialiser.TransferFromString(contents);
-                            return await InputFormatterResult.SuccessAsync(transfer);
+                            return await InputFormatterResult.SuccessAsync(transfer).ConfigureAwait(false);
                         }
                         catch (ParseException)
                         {
-                            return await InputFormatterResult.FailureAsync();
+                            return await InputFormatterResult.FailureAsync().ConfigureAwait(false);
                         }
                     }
                 }

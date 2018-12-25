@@ -1,9 +1,11 @@
 ﻿// <copyright file="JsonBatchRequestSerialiser.cs" company="Glenn Watson">
-//    Copyright (C) 2017. Glenn Watson
+// Copyright (c) 2018 Glenn Watson. All rights reserved.
+// See LICENSE file in the project root for full license information.
 // </copyright>
 
 namespace GitLfs.Core.BatchRequest
 {
+    using System.Diagnostics.CodeAnalysis;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
     using Newtonsoft.Json.Serialization;
@@ -41,8 +43,10 @@ namespace GitLfs.Core.BatchRequest
 
         private static JsonSerializerSettings CreateSettings()
         {
-            var settings = new JsonSerializerSettings();
-            settings.Formatting = Formatting.Indented;
+            var settings = new JsonSerializerSettings
+            {
+                Formatting = Formatting.Indented
+            };
             settings.Converters.Add(new StringEnumConverter());
             settings.ContractResolver = new LowercaseContractResolver();
             return settings;
@@ -50,9 +54,10 @@ namespace GitLfs.Core.BatchRequest
 
         private class LowercaseContractResolver : DefaultContractResolver
         {
+            [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "Needed by LFS standard.")]
             protected override string ResolvePropertyName(string propertyName)
             {
-                return propertyName.ToLower();
+                return propertyName.ToLowerInvariant();
             }
         }
     }

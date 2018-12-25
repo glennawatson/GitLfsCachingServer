@@ -1,5 +1,6 @@
 ﻿// <copyright file="ILfsClient.cs" company="Glenn Watson">
-//    Copyright (C) 2017. Glenn Watson
+// Copyright (c) 2018 Glenn Watson. All rights reserved.
+// See LICENSE file in the project root for full license information.
 // </copyright>
 
 namespace GitLfs.Client
@@ -16,19 +17,41 @@ namespace GitLfs.Client
     /// </summary>
     public interface ILfsClient
     {
-        Task<Stream> DownloadFile(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action);
+        /// <summary>
+        /// Downloads the file from the server.
+        /// </summary>
+        /// <param name="host">The git host where to download the file from.</param>
+        /// <param name="repositoryName">The name of the repository where to download the file from.</param>
+        /// <param name="objectId">The id of the object to download.</param>
+        /// <param name="action">The action when doing batch operators.</param>
+        /// <returns>A stream to the file.</returns>
+        Task<Stream> DownloadFileAsync(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action);
 
         /// <summary>
         /// Requests a batch transfer from the server.
         /// </summary>
-        /// <returns>The batch transfer returned from the server.</returns>
         /// <param name="host">The host details where to upload the file.</param>
         /// <param name="repositoryName">The repository name.</param>
         /// <param name="request">The request details for the server.</param>
-        Task<BatchTransfer> RequestBatch(GitHost host, string repositoryName, BatchRequest request);
+        /// <returns>The batch transfer returned from the server.</returns>
+        Task<BatchTransfer> RequestBatchAsync(GitHost host, string repositoryName, BatchRequest request);
 
-        Task UploadFile(BatchObjectAction action, Stream stream);
+        /// <summary>
+        /// Uploads a file to the server.
+        /// </summary>
+        /// <param name="action">The action to perform in regards to the batching.</param>
+        /// <param name="stream">A stream to the file.</param>
+        /// <returns>A task to monitor the progress.</returns>
+        Task UploadFileAsync(BatchObjectAction action, Stream stream);
 
-        Task Verify(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action);
+        /// <summary>
+        /// Verify that a file action has been completed.
+        /// </summary>
+        /// <param name="host">The host to verify the action against.</param>
+        /// <param name="repositoryName">The name of the repository.</param>
+        /// <param name="objectId">The ID of the object to confirm.</param>
+        /// <param name="action">The action to perform in regards to the batch object.</param>
+        /// <returns>A task to monitor the progress.</returns>
+        Task VerifyAsync(GitHost host, string repositoryName, ObjectId objectId, BatchObjectAction action);
     }
 }
