@@ -3,52 +3,51 @@
 // See LICENSE file in the project root for full license information.
 // </copyright>
 
-namespace GitLfs.Core.Verify
+namespace GitLfs.Core.Verify;
+
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+
+/// <summary>
+/// Serialises a verify object.
+/// </summary>
+public class JsonVerifyObjectSerialiser : IVerifyObjectSerialiser
 {
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
-
-    /// <summary>
-    /// Serialises a verify object.
-    /// </summary>
-    public class JsonVerifyObjectSerialiser : IVerifyObjectSerialiser
+    /// <inheritdoc />
+    public ObjectId FromString(string value)
     {
-        /// <inheritdoc />
-        public ObjectId FromString(string value)
+        try
         {
-            try
-            {
-                return JsonConvert.DeserializeObject<ObjectId>(value, CreateSettings());
-            }
-            catch (JsonException ex)
-            {
-                throw new ParseException(ex.Message, ex);
-            }
+            return JsonConvert.DeserializeObject<ObjectId>(value, CreateSettings());
         }
-
-        /// <inheritdoc />
-        public string ToString(ObjectId transfer)
+        catch (JsonException ex)
         {
-            try
-            {
-                return JsonConvert.SerializeObject(transfer, CreateSettings());
-            }
-            catch (JsonException ex)
-            {
-                throw new ParseException(ex.Message, ex);
-            }
+            throw new ParseException(ex.Message, ex);
         }
+    }
 
-        private static JsonSerializerSettings CreateSettings()
+    /// <inheritdoc />
+    public string ToString(ObjectId transfer)
+    {
+        try
         {
-            var settings = new JsonSerializerSettings
-            {
-                Formatting = Formatting.Indented
-            };
-
-            settings.Converters.Add(new StringEnumConverter());
-
-            return settings;
+            return JsonConvert.SerializeObject(transfer, CreateSettings());
         }
+        catch (JsonException ex)
+        {
+            throw new ParseException(ex.Message, ex);
+        }
+    }
+
+    private static JsonSerializerSettings CreateSettings()
+    {
+        var settings = new JsonSerializerSettings
+        {
+            Formatting = Formatting.Indented,
+        };
+
+        settings.Converters.Add(new StringEnumConverter());
+
+        return settings;
     }
 }

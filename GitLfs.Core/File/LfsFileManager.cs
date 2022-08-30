@@ -5,292 +5,291 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace GitLfs.Core.File
+namespace GitLfs.Core.File;
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
+using GitLfs.Core.ErrorHandling;
+using Microsoft.AspNetCore.Hosting;
+
+/// <summary>
+/// Manages the files inside a LFS store.
+/// </summary>
+public class LfsFileManager : IFileManager
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Text;
-    using System.Threading.Tasks;
-    using GitLfs.Core.ErrorHandling;
-    using Microsoft.AspNetCore.Hosting;
+    private const string DirectoryPrefix = "lfs";
+    private static readonly IDictionary<FileLocation, string> Prefixes = new Dictionary<FileLocation, string>
+    {
+        { FileLocation.Temporary, "temp" },
+        { FileLocation.Permanent, "perm" },
+        { FileLocation.Metadata, "meta" },
+    };
+
+    private readonly IHostingEnvironment _hostingEnvironment;
 
     /// <summary>
-    /// Manages the files inside a LFS store.
+    /// Initializes a new instance of the <see cref="LfsFileManager"/> class.
     /// </summary>
-    public class LfsFileManager : IFileManager
+    /// <param name="hostingEnvironment">Details about the hosting environment.</param>
+    public LfsFileManager(IHostingEnvironment hostingEnvironment)
     {
-        private const string DirectoryPrefix = "lfs";
-        private static readonly IDictionary<FileLocation, string> Prefixes = new Dictionary<FileLocation, string>
-                                                                                 {
-                                                                                     { FileLocation.Temporary, "temp" },
-                                                                                     { FileLocation.Permanent, "perm" },
-                                                                                     { FileLocation.Metadata, "meta" }
-                                                                                 };
+        _hostingEnvironment = hostingEnvironment;
+    }
 
-        private readonly IHostingEnvironment hostingEnvironment;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="LfsFileManager"/> class.
-        /// </summary>
-        /// <param name="hostingEnvironment">Details about the hosting environment.</param>
-        public LfsFileManager(IHostingEnvironment hostingEnvironment)
+    /// <inheritdoc />
+    public Stream GetFileStream(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null)
+    {
+        try
         {
-            this.hostingEnvironment = hostingEnvironment;
-        }
-
-        /// <inheritdoc />
-        public Stream GetFileStream(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null)
-        {
-            try
-            {
-                if (!this.IsFileStored(repositoryName, objectId, location, false, suffix))
-                {
-                    return null;
-                }
-
-                string path = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix).Item2;
-                return new FileStream(path, FileMode.Open, FileAccess.Read);
-            }
-            catch (IOException ex)
-            {
-                throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
-            }
-        }
-
-        /// <inheritdoc />
-        public async Task<string> GetFileContentsAsync(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null)
-        {
-            using (var streamer = new StreamReader(this.GetFileStream(repositoryName, objectId, location, suffix)))
-            {
-                return await streamer.ReadToEndAsync().ConfigureAwait(false);
-            }
-        }
-
-        /// <inheritdoc />
-        public string GetFilePath(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null)
-        {
-            if (!this.IsFileStored(repositoryName, objectId, location, false, suffix))
+            if (!IsFileStored(repositoryName, objectId, location, false, suffix))
             {
                 return null;
             }
 
-            return this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix).Item2;
+            string path = GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix).FileName;
+            return new FileStream(path, FileMode.Open, FileAccess.Read);
+        }
+        catch (IOException ex)
+        {
+            throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<string> GetFileContentsAsync(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null)
+    {
+        using (var streamer = new StreamReader(GetFileStream(repositoryName, objectId, location, suffix)))
+        {
+            return await streamer.ReadToEndAsync().ConfigureAwait(false);
+        }
+    }
+
+    /// <inheritdoc />
+    public string GetFilePath(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null)
+    {
+        if (!IsFileStored(repositoryName, objectId, location, false, suffix))
+        {
+            return null;
         }
 
-        /// <inheritdoc />
-        public string SaveFile(string repositoryName, ObjectId objectId, FileLocation location, Stream contents, string suffix = null)
+        return GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix).FileName;
+    }
+
+    /// <inheritdoc />
+    public string SaveFile(string repositoryName, ObjectId objectId, FileLocation location, Stream contents, string suffix = null)
+    {
+        var (directory, fileName) = GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+
+        try
         {
-            var (directory, fileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+            Directory.CreateDirectory(directory);
 
-            try
+            using (FileStream fileStream = new FileStream(fileName, FileMode.Create, FileAccess.Write))
             {
-                Directory.CreateDirectory(directory);
+                contents.CopyTo(fileStream);
 
-                using (FileStream fileStream = new FileStream(fileName, FileMode.Create, FileAccess.Write))
-                {
-                    contents.CopyTo(fileStream);
-
-                    return fileName;
-                }
-            }
-            catch (IOException ex)
-            {
-                throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
+                return fileName;
             }
         }
-
-        /// <inheritdoc />
-        public Stream SaveFile(out string fileName, string repositoryName, ObjectId objectId, FileLocation location, Stream contents, string suffix = null)
+        catch (IOException ex)
         {
-            var (directory, inputFileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+            throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
+        }
+    }
 
-            try
+    /// <inheritdoc />
+    public Stream SaveFile(out string fileName, string repositoryName, ObjectId objectId, FileLocation location, Stream contents, string suffix = null)
+    {
+        var (directory, inputFileName) = GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+
+        try
+        {
+            Directory.CreateDirectory(directory);
+            fileName = inputFileName;
+            return new CachingStream(contents, fileName);
+        }
+        catch (IOException ex)
+        {
+            throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<string> SaveFileAsync(string repositoryName, ObjectId objectId, FileLocation location, string contents, string suffix = null)
+    {
+        var (directory, fileName) = GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+
+        try
+        {
+            Directory.CreateDirectory(directory);
+
+            using (StreamWriter fileStream = new StreamWriter(new FileStream(fileName, FileMode.Create, FileAccess.Write)))
             {
-                Directory.CreateDirectory(directory);
-                fileName = inputFileName;
-                return new CachingStream(contents, fileName);
-            }
-            catch (IOException ex)
-            {
-                throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
+                await fileStream.WriteAsync(contents).ConfigureAwait(false);
+
+                return fileName;
             }
         }
-
-        /// <inheritdoc />
-        public async Task<string> SaveFileAsync(string repositoryName, ObjectId objectId, FileLocation location, string contents, string suffix = null)
+        catch (IOException ex)
         {
-            var (directory, fileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+            throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
+        }
+    }
 
-            try
+    /// <inheritdoc />
+    public async Task<string> SaveFileAsync(string repositoryName, ObjectId objectId, FileLocation location, Stream contents, string suffix = null)
+    {
+        var (directory, fileName) = GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+
+        try
+        {
+            Directory.CreateDirectory(directory);
+
+            using (FileStream fileStream = new FileStream(fileName, FileMode.Create, FileAccess.Write))
             {
-                Directory.CreateDirectory(directory);
+                await contents.CopyToAsync(fileStream).ConfigureAwait(false);
 
-                using (StreamWriter fileStream = new StreamWriter(new FileStream(fileName, FileMode.Create, FileAccess.Write)))
-                {
-                    await fileStream.WriteAsync(contents).ConfigureAwait(false);
-
-                    return fileName;
-                }
-            }
-            catch (IOException ex)
-            {
-                throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
+                return fileName;
             }
         }
-
-        /// <inheritdoc />
-        public async Task<string> SaveFileAsync(string repositoryName, ObjectId objectId, FileLocation location, Stream contents, string suffix = null)
+        catch (IOException ex)
         {
-            var (directory, fileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+            throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
+        }
+    }
 
-            try
-            {
-                Directory.CreateDirectory(directory);
+    /// <inheritdoc />
+    public void DeleteFile(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null)
+    {
+        var (directory, fileName) = GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
 
-                using (FileStream fileStream = new FileStream(fileName, FileMode.Create, FileAccess.Write))
-                {
-                    await contents.CopyToAsync(fileStream).ConfigureAwait(false);
-
-                    return fileName;
-                }
-            }
-            catch (IOException ex)
-            {
-                throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
-            }
+        if (!File.Exists(fileName))
+        {
+            return;
         }
 
-        /// <inheritdoc />
-        public void DeleteFile(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null)
+        try
         {
-            var (directory, fileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+            File.Delete(fileName);
 
-            if (!File.Exists(fileName))
+            CleanDirectoryIfEmpty(directory);
+        }
+        catch (IOException ex)
+        {
+            throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
+        }
+    }
+
+    /// <inheritdoc />
+    public void MoveFile(string repositoryName, ObjectId objectId, FileLocation fromFileLocation, FileLocation toFileLocation, string suffix = null)
+    {
+        var (tempDirectory, tempFileName) = GetDirectoriesAndFileNames(repositoryName, objectId, fromFileLocation, suffix);
+        var (permanentDirectory, permanentFileName) = GetDirectoriesAndFileNames(repositoryName, objectId, toFileLocation, suffix);
+
+        try
+        {
+            Directory.CreateDirectory(permanentDirectory);
+
+            if (File.Exists(permanentDirectory))
             {
                 return;
             }
 
-            try
-            {
-                File.Delete(fileName);
+            File.Move(tempFileName, permanentFileName);
 
-                CleanDirectoryIfEmpty(directory);
-            }
-            catch (IOException ex)
-            {
-                throw new ErrorResponseException(new ErrorResponse() { Message = ex.Message }, 500);
-            }
+            CleanDirectoryIfEmpty(tempDirectory);
+        }
+        catch (IOException ex)
+        {
+            throw new ErrorResponseException(new ErrorResponse { Message = ex.Message }, 500);
+        }
+    }
+
+    /// <inheritdoc />
+    public bool IsFileStored(string repositoryName, ObjectId objectId, FileLocation location, bool matchSize = false, string suffix = null)
+    {
+        var (directory, fileName) = GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+
+        if (!Directory.Exists(directory))
+        {
+            return false;
         }
 
-        /// <inheritdoc />
-        public void MoveFile(string repositoryName, ObjectId objectId, FileLocation fromFileLocation, FileLocation toFileLocation, string suffix = null)
+        if (!File.Exists(fileName))
         {
-            var (tempDirectory, tempFileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, fromFileLocation, suffix);
-            var (permanentDirectory, permanentFileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, toFileLocation, suffix);
-
-            try
-            {
-                Directory.CreateDirectory(permanentDirectory);
-
-                if (File.Exists(permanentDirectory))
-                {
-                    return;
-                }
-
-                File.Move(tempFileName, permanentFileName);
-
-                CleanDirectoryIfEmpty(tempDirectory);
-            }
-            catch (IOException ex)
-            {
-                throw new ErrorResponseException(new ErrorResponse { Message = ex.Message }, 500);
-            }
+            return false;
         }
 
-        /// <inheritdoc />
-        public bool IsFileStored(string repositoryName, ObjectId objectId, FileLocation location, bool matchSize = false, string suffix = null)
+        if (matchSize)
         {
-            var (directory, fileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+            var fileInfo = new FileInfo(fileName);
 
-            if (!Directory.Exists(directory))
+            if (fileInfo.Length != objectId.Size)
             {
                 return false;
             }
-
-            if (!File.Exists(fileName))
-            {
-                return false;
-            }
-
-            if (matchSize)
-            {
-                var fileInfo = new FileInfo(fileName);
-
-                if (fileInfo.Length != objectId.Size)
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
-        /// <inheritdoc />
-        public long GetFileSize(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null)
+        return true;
+    }
+
+    /// <inheritdoc />
+    public long GetFileSize(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null)
+    {
+        var (directory, fileName) = GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
+
+        if (!Directory.Exists(directory))
         {
-            var (directory, fileName) = this.GetDirectoriesAndFileNames(repositoryName, objectId, location, suffix);
-
-            if (!Directory.Exists(directory))
-            {
-                return 0;
-            }
-
-            if (!File.Exists(fileName))
-            {
-                return 0;
-            }
-
-            return new FileInfo(fileName).Length;
+            return 0;
         }
 
-        private static void CleanDirectoryIfEmpty(string path)
+        if (!File.Exists(fileName))
         {
-            string currentDirectory = Path.GetDirectoryName(path);
-
-            for (int i = 0; i < 2; ++i)
-            {
-                if (Directory.GetFileSystemEntries(currentDirectory).Length == 0)
-                {
-                    Directory.Delete(currentDirectory);
-                }
-                else
-                {
-                    break;
-                }
-
-                currentDirectory = Path.GetDirectoryName(currentDirectory);
-            }
+            return 0;
         }
 
-        private (string directory, string fileName) GetDirectoriesAndFileNames(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null)
+        return new FileInfo(fileName).Length;
+    }
+
+    private static void CleanDirectoryIfEmpty(string path)
+    {
+        string currentDirectory = Path.GetDirectoryName(path);
+
+        for (int i = 0; i < 2; ++i)
         {
-            string repositoryRoot = Path.Combine(this.hostingEnvironment.ContentRootPath, DirectoryPrefix);
-
-            repositoryRoot = Path.Combine(repositoryRoot, Prefixes[location]);
-
-            string firstDirectory = Path.Combine(repositoryRoot, repositoryName, objectId.Hash.Substring(0, 2));
-
-            string secondDirectory = Path.Combine(firstDirectory, objectId.Hash.Substring(2, 2));
-
-            StringBuilder fileName = new StringBuilder(Path.Combine(secondDirectory, objectId.Hash));
-
-            if (suffix != null)
+            if (Directory.GetFileSystemEntries(currentDirectory).Length == 0)
             {
-                fileName.Append($"-{suffix}");
+                Directory.Delete(currentDirectory);
+            }
+            else
+            {
+                break;
             }
 
-            return (secondDirectory, fileName.ToString());
+            currentDirectory = Path.GetDirectoryName(currentDirectory);
         }
+    }
+
+    private (string Directory, string FileName) GetDirectoriesAndFileNames(string repositoryName, ObjectId objectId, FileLocation location, string suffix = null)
+    {
+        string repositoryRoot = Path.Combine(_hostingEnvironment.ContentRootPath, DirectoryPrefix);
+
+        repositoryRoot = Path.Combine(repositoryRoot, Prefixes[location]);
+
+        string firstDirectory = Path.Combine(repositoryRoot, repositoryName, objectId.Hash.Substring(0, 2));
+
+        string secondDirectory = Path.Combine(firstDirectory, objectId.Hash.Substring(2, 2));
+
+        StringBuilder fileName = new StringBuilder(Path.Combine(secondDirectory, objectId.Hash));
+
+        if (suffix != null)
+        {
+            fileName.Append('-').Append(suffix);
+        }
+
+        return (secondDirectory, fileName.ToString());
     }
 }

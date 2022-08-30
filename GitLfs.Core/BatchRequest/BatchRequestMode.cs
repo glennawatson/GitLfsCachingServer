@@ -3,25 +3,24 @@
 // See LICENSE file in the project root for full license information.
 // </copyright>
 
-namespace GitLfs.Core.BatchRequest
+namespace GitLfs.Core.BatchRequest;
+
+using System.Runtime.Serialization;
+
+/// <summary>
+/// Gets the batch request mode we are doing with a batch request.
+/// </summary>
+public enum BatchRequestMode
 {
-    using System.Runtime.Serialization;
+    /// <summary>
+    /// The mode of the batch request is to upload files.
+    /// </summary>
+    [EnumMember(Value = "upload")]
+    Upload,
 
     /// <summary>
-    /// Gets the batch request mode we are doing with a batch request.
+    /// The mode of the batch request is to download files.
     /// </summary>
-    public enum BatchRequestMode
-    {
-        /// <summary>
-        /// The mode of the batch request is to upload files.
-        /// </summary>
-        [EnumMember(Value = "upload")]
-        Upload,
-
-        /// <summary>
-        /// The mode of the batch request is to download files.
-        /// </summary>
-        [EnumMember(Value = "download")]
-        Download
-    }
+    [EnumMember(Value = "download")]
+    Download,
 }

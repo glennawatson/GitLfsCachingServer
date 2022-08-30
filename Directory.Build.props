@@ -1,21 +1,30 @@
 <Project>
   <PropertyGroup>
     <Deterministic>true</Deterministic>
-    <CodeAnalysisRuleSet>$(MSBuildThisFileDirectory)Analyzers.ruleset</CodeAnalysisRuleSet>
     <Copyright>Copyright © Glenn Watson</Copyright>
     <NoPackageAnalysis>true</NoPackageAnalysis>
-    <NoWarn>$(NoWarn);IDE0003</NoWarn>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <NetAnalyzers>enable</NetAnalyzers>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <SolutionDir Condition="'$(SolutionDir)' == ''">$(MSBuildThisFileDirectory)</SolutionDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('SourceGenerators'))">
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="stylecop.analyzers" Version="1.1.118" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.4" PrivateAssets="all" />
-    <PackageReference Include="Roslynator.Analyzers" Version="2.1.0" PrivateAssets="All" />
+    <PackageReference Include="stylecop.analyzers" Version="1.2.0-beta.435" PrivateAssets="all" />
+    <PackageReference Include="Roslynator.Analyzers" Version="4.1.1" PrivateAssets="All" />
   </ItemGroup>
   <ItemGroup>	
     <PackageReference Include="Nerdbank.GitVersioning" Version="3.0.25" PrivateAssets="all" />	
   </ItemGroup>  
   <ItemGroup>
-    <AdditionalFiles  Include="$(MSBuildThisFileDirectory)stylecop.json" Link="stylecop.json" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" Link="stylecop.json" />
   </ItemGroup>
 </Project>

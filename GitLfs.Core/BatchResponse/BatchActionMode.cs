@@ -3,26 +3,25 @@
 // See LICENSE file in the project root for full license information.
 // </copyright>
 
-namespace GitLfs.Core.BatchResponse
+namespace GitLfs.Core.BatchResponse;
+
+/// <summary>
+/// The action mode of a batch request.
+/// </summary>
+public enum BatchActionMode
 {
     /// <summary>
-    /// The action mode of a batch request.
+    /// The batch mode is to upload files.
     /// </summary>
-    public enum BatchActionMode
-    {
-        /// <summary>
-        /// The batch mode is to upload files.
-        /// </summary>
-        Upload,
+    Upload,
 
-        /// <summary>
-        /// The batch mode is to download files.
-        /// </summary>
-        Download,
+    /// <summary>
+    /// The batch mode is to download files.
+    /// </summary>
+    Download,
 
-        /// <summary>
-        /// The batch mode is to verify the LFS status on the server.
-        /// </summary>
-        Verify
-    }
+    /// <summary>
+    /// The batch mode is to verify the LFS status on the server.
+    /// </summary>
+    Verify,
 }

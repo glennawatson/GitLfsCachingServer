@@ -1,15 +1,24 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.168
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.32804.182
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitLfs.Server.Caching", "GitLfs.Server.Caching\GitLfs.Server.Caching.csproj", "{0327D3A9-C397-41AD-AE28-E0E811FC9B7A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitLfs.Server.Caching", "GitLfs.Server.Caching\GitLfs.Server.Caching.csproj", "{0327D3A9-C397-41AD-AE28-E0E811FC9B7A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitLfs.Client", "GitLfs.Client\GitLfs.Client.csproj", "{A8C0678F-C179-4A7C-8403-0E2DF81905AF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitLfs.Core", "GitLfs.Core\GitLfs.Core.csproj", "{8B0D67CB-BCEE-4A73-89AE-3BE3CFA514C6}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitLfs.Core.Tests", "GitLfs.Core.Tests\GitLfs.Core.Tests.csproj", "{D98E7318-E9EF-4BBF-85A8-BDDF81AD59BF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D56E708E-3889-497E-881D-8F6BFF11842C}"
+	ProjectSection(SolutionItems) = preProject
+		.dockerignore = .dockerignore
+		.gitignore = .gitignore
+		Directory.Build.props = Directory.Build.props
+		stylecop.json = stylecop.json
+		version.json = version.json
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

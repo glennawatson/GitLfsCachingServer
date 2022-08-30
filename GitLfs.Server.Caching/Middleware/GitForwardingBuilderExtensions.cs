@@ -3,31 +3,29 @@
 // See LICENSE file in the project root for full license information.
 // </copyright>
 
-namespace GitLfs.Server.Caching.Middleware
+namespace GitLfs.Server.Caching.Middleware;
+
+using System;
+using Microsoft.AspNetCore.Builder;
+
+/// <summary>
+/// Extension methods for the <see cref="GitForwardingBuilderExtensions" />.
+/// </summary>
+public static class GitForwardingBuilderExtensions
 {
-    using System;
-
-    using Microsoft.AspNetCore.Builder;
-
     /// <summary>
-    /// Extension methods for the <see cref="GitForwardingBuilderExtensions" />.
+    /// Checks if a given Url matches rules and conditions, and modifies the HttpContext on match.
     /// </summary>
-    public static class GitForwardingBuilderExtensions
+    /// <param name="app">The <see cref="IApplicationBuilder" />.</param>
+    /// <returns>The application builder.</returns>
+    public static IApplicationBuilder UseGitForwarding(this IApplicationBuilder app)
     {
-        /// <summary>
-        /// Checks if a given Url matches rules and conditions, and modifies the HttpContext on match.
-        /// </summary>
-        /// <param name="app">The <see cref="IApplicationBuilder" />.</param>
-        /// <returns>The application builder.</returns>
-        public static IApplicationBuilder UseGitForwarding(this IApplicationBuilder app)
+        if (app == null)
         {
-            if (app == null)
-            {
-                throw new ArgumentNullException(nameof(app));
-            }
-
-            // put middleware in pipeline
-            return app.UseMiddleware<GitForwardingMiddleware>();
+            throw new ArgumentNullException(nameof(app));
         }
+
+        // put middleware in pipeline
+        return app.UseMiddleware<GitForwardingMiddleware>();
     }
 }
